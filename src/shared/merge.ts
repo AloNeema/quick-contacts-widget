@@ -1,0 +1,141 @@
+import type { Contact, IncomingContact, MergeOptions, MergeSummary } from "./types";
+
+/** Stable hue for the initials avatar, derived from the name. */
+export function hueForName(name: string): number {
+  let h = 0;
+  for (const ch of name.toLowerCase()) h = (h * 31 + ch.codePointAt(0)!) % 360;
+  return h;
+}
+
+export function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
+export function newContactId(): string {
+  const g = globalThis as { crypto?: { randomUUID?: () => string } };
+  if (g.crypto?.randomUUID) return g.crypto.randomUUID();
+  return `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function createContact(input: IncomingContact, order: number, now = new Date().toISOString()): Contact {
+  return {
+    id: newContactId(),
+    name: input.name,
+    title: input.title,
+    company: input.company,
+    phone: input.phone,
+    email: input.email,
+    linkedinUrl: input.linkedinUrl,
+    photo: input.photoUrl ? { kind: "url", url: input.photoUrl } : undefined,
+    hue: hueForName(input.name),
+    pinned: false,
+    order,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * Merge an import into the existing list. Match by email, then phone. On a
+ * match, only non-empty incoming fields overwrite; photo, pin state, order and
+ * id are never touched (a URL photo is only adopted when the contact has none).
+ */
+export function mergeContacts(
+  existing: Contact[],
+  incoming: IncomingContact[],
+  options: MergeOptions = { removeMissing: false },
+  now = new Date().toISOString(),
+): { contacts: Contact[]; summary: MergeSummary } {
+  const summary: MergeSummary = { added: 0, updated: 0, skipped: 0, removed: 0 };
+  const byEmail = new Map<string, Contact>();
+  const byPhone = new Map<string, Contact>();
+  const result = existing.map((c) => ({ ...c }));
+  for (const c of result) {
+    if (c.email) byEmail.set(c.email, c);
+    if (c.phone) byPhone.set(c.phone, c);
+  }
+  const touched = new Set<string>();
+  let nextOrder = result.reduce((m, c) => Math.max(m, c.order), -1) + 1;
+
+  for (const inc of incoming) {
+    if (!inc.email && !inc.phone) {
+      summary.skipped++;
+      continue;
+    }
+    const match = (inc.email && byEmail.get(inc.email)) || (inc.phone && byPhone.get(inc.phone)) || undefined;
+    if (match) {
+      if (touched.has(match.id)) {
+        summary.skipped++; // duplicate row inside the file
+        continue;
+      }
+      touched.add(match.id);
+      let changed = false;
+      const set = <K extends keyof Contact>(k: K, v: Contact[K] | undefined) => {
+        if (v !== undefined && v !== "" && match[k] !== v) {
+          match[k] = v;
+          changed = true;
+        }
+      };
+      set("name", inc.name);
+      set("title", inc.title);
+      set("company", inc.company);
+      set("linkedinUrl", inc.linkedinUrl);
+      if (inc.email && !match.email) set("email", inc.email);
+      if (inc.phone && !match.phone) set("phone", inc.phone);
+      if (!match.photo && inc.photoUrl) {
+        match.photo = { kind: "url", url: inc.photoUrl };
+        changed = true;
+      }
+      if (changed) {
+        match.updatedAt = now;
+        summary.updated++;
+      }
+      if (match.email) byEmail.set(match.email, match);
+      if (match.phone) byPhone.set(match.phone, match);
+      continue;
+    }
+    const created = createContact(inc, nextOrder++, now);
+    result.push(created);
+    touched.add(created.id);
+    if (created.email) byEmail.set(created.email, created);
+    if (created.phone) byPhone.set(created.phone, created);
+    summary.added++;
+  }
+
+  let contacts = result;
+  if (options.removeMissing) {
+    contacts = result.filter((c) => touched.has(c.id));
+    summary.removed = result.length - contacts.length;
+  }
+  return { contacts: normalizeOrder(contacts), summary };
+}
+
+/** Pinned first, then by order; re-number order 0..n-1. */
+export function normalizeOrder(contacts: Contact[]): Contact[] {
+  return [...contacts]
+    .sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.order - b.order)
+    .map((c, i) => (c.order === i ? c : { ...c, order: i }));
+}
+
+export function moveContact(contacts: Contact[], id: string, direction: -1 | 1): Contact[] {
+  const sorted = normalizeOrder(contacts);
+  const i = sorted.findIndex((c) => c.id === id);
+  const j = i + direction;
+  if (i < 0 || j < 0 || j >= sorted.length) return sorted;
+  if (sorted[i].pinned !== sorted[j].pinned) return sorted; // keep pinned group intact
+  [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
+  return sorted.map((c, k) => ({ ...c, order: k }));
+}
+
+export function filterContacts(contacts: Contact[], query: string): Contact[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return normalizeOrder(contacts);
+  const digits = q.replace(/\D/g, "");
+  return normalizeOrder(contacts).filter((c) =>
+    [c.name, c.title, c.company, c.email].some((v) => v?.toLowerCase().includes(q)) ||
+    (digits.length >= 3 && c.phone?.includes(digits)),
+  );
+}

@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 14px;
+    --accent-hue: 212;
+    --panel-opacity: 0.62;
+    --panel-blur: 24px;
+
+    /* dark theme (default) */
+    --background: 222 20% 8%;
+    --foreground: 210 20% 96%;
+    --card: 222 18% 12%;
+    --card-foreground: 210 20% 96%;
+    --popover: 222 18% 12%;
+    --popover-foreground: 210 20% 96%;
+    --primary: var(--accent-hue) 90% 60%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 222 14% 20%;
+    --muted-foreground: 215 14% 66%;
+    --accent: var(--accent-hue) 60% 24%;
+    --accent-foreground: 210 20% 96%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 16% 100% / 0.1;
+    --input: 215 16% 100% / 0.12;
+    --ring: var(--accent-hue) 90% 60%;
+
+    --glass-bg: 222 18% 10%;
+    --glass-highlight: 0 0% 100% / 0.14;
+    --glass-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.65), 0 2px 8px rgb(0 0 0 / 0.35);
+  }
+
+  :root[data-theme="light"] {
+    --background: 220 30% 97%;
+    --foreground: 222 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 30% 12%;
+    --primary: var(--accent-hue) 85% 48%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 220 20% 92%;
+    --muted-foreground: 222 12% 42%;
+    --accent: var(--accent-hue) 80% 92%;
+    --accent-foreground: 222 30% 12%;
+    --border: 222 20% 0% / 0.1;
+    --input: 222 20% 0% / 0.12;
+    --glass-bg: 0 0% 100%;
+    --glass-highlight: 0 0% 100% / 0.8;
+    --glass-shadow: 0 24px 60px -24px rgb(15 23 42 / 0.35), 0 2px 8px rgb(15 23 42 / 0.12);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: transparent;
+    color: hsl(var(--foreground));
+    font-family: theme(fontFamily.sans);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* Settings window gets a normal opaque surface. */
+  body[data-surface="settings"] {
+    background: hsl(var(--background));
+    user-select: text;
+  }
+
+  input,
+  textarea {
+    user-select: text;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--foreground) / 0.18);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--foreground) / 0.3);
+  }
+}
+
+@layer components {
+  .drag {
+    -webkit-app-region: drag;
+  }
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+
+  .glass-panel {
+    position: relative;
+    background: hsl(var(--glass-bg) / var(--panel-opacity));
+    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.4);
+    backdrop-filter: blur(var(--panel-blur)) saturate(1.4);
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--glass-shadow), inset 0 1px 0 hsl(var(--glass-highlight));
+    border-radius: 22px;
+    overflow: hidden;
+  }
+  .glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 80% at 0% 0%, hsl(var(--accent-hue) 90% 60% / 0.18), transparent 60%),
+      radial-gradient(100% 60% at 100% 100%, hsl(calc(var(--accent-hue) + 40) 90% 60% / 0.1), transparent 60%);
+  }
+
+  .action-btn {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-full text-foreground/80 transition-all duration-150;
+    background: hsl(var(--foreground) / 0.06);
+    border: 1px solid hsl(var(--foreground) / 0.08);
+  }
+  .action-btn:hover {
+    @apply text-primary-foreground;
+    background: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+    transform: translateY(-1px);
+  }
+  .action-btn:active {
+    transform: translateY(0);
+  }
+  .action-btn:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+}
