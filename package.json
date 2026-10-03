@@ -6,6 +6,7 @@
   "private": true,
   "main": "./out/main/index.js",
   "author": "Quick Capital Funding",
+  "repository": { "type": "git", "url": "https://github.com/AloNeema/quick-contacts-widget.git" },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",

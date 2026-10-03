@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    name: Build and package (macOS, Apple Silicon + Intel)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - run: npm install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - name: Package dmg and zip (unsigned)
+        run: npx electron-vite build && npx electron-builder --mac --config electron-builder.yml
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qcf-contacts-macos
+          path: |
+            release/*.dmg
+            release/*-mac.zip
+            release/*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  build:
+    name: Test, build and package (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Package installer and portable exe
+        run: npm run dist:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qcf-contacts-windows
+          path: |
+            release/*.exe
+          if-no-files-found: error
+          retention-days: 30

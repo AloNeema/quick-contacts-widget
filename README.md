@@ -35,18 +35,17 @@ To build locally on a Mac: `npm install`, `npm run dev`, or `npx electron-vite b
 Prerequisites: [Node.js 22](https://nodejs.org) (the installer includes npm). No Rust, no Visual Studio.
 
 ```powershell
-cd desktop\contacts-widget
 npm install
 npm run dev          # launches the widget with hot reload
 ```
 
-Build an installer and a portable exe (both land in `desktop\contacts-widget\release\`):
+Build an installer and a portable exe (both land in `release\`):
 
 ```powershell
 npm run dist:win
 ```
 
-`QCF Contacts-<version>-x64.exe` is the installer; `QCF Contacts-<version>-portable.exe` runs without installing. The GitHub Actions workflow `.github/workflows/contacts-widget.yml` builds the same artifacts on `windows-latest` for changes under this folder.
+`QCF Contacts-<version>-x64.exe` is the installer; `QCF Contacts-<version>-portable.exe` runs without installing. The GitHub Actions `CI` workflow builds the same artifacts on `windows-latest` and `macos-latest` for every push.
 
 The widget's data (`state.json` and the `photos/` folder) is in `%APPDATA%\QCF Contacts\`. Delete that folder to reset the app.
 
@@ -80,7 +79,7 @@ The widget only reads Contacts, Leads, Accounts and Opportunities with your own 
 
 ## Releasing an update
 
-Bump `version` in `package.json`, merge, then run the **Contacts widget release** workflow from the Actions tab. It builds on Windows and uploads the installer, portable exe and `latest.yml` to a **draft** release tagged `v<version>`; publish the draft and installed widgets pick it up within six hours (or via *Check now*). Because the repository is private, each PC needs a fine-grained personal access token with read-only *Contents* permission pasted once under Settings › General › Private repository token; it is stored encrypted on that PC.
+Bump `version` in `package.json`, merge, then run the **Release** workflow from the Actions tab. It builds on Windows and uploads the installer, portable exe and `latest.yml` to a **draft** release tagged `v<version>`; publish the draft and installed widgets pick it up within six hours (or via *Check now*). While the repository is private, each PC needs a fine-grained personal access token with read-only *Contents* permission pasted once under Settings › General › Private repository token; it is stored encrypted on that PC.
 
 ## Spreadsheet format
 
@@ -99,4 +98,4 @@ Layout: `src/main` (Electron main: windows, tray, JSON store, photos, spreadshee
 
 Security posture: context isolation on, node integration off, a CSP in `index.html`, every IPC payload validated with zod in the main process, and `shell.openExternal` limited to `tel:`, `sms:`, `mailto:`, `rcapp:`, `msteams:`, `callto:`, `sip:`, `https://linkedin.com` and the scheme of a custom template.
 
-This folder is self-contained: it has its own `package.json`, is excluded from the root ESLint run, and is not part of the web app's TypeScript, Vitest or Vite builds.
+This is a standalone desktop app. It does not depend on the QCF Offer Tool web app; it talks to Microsoft 365, Salesforce and your dialer directly.

@@ -45,5 +45,5 @@ portable:
 publish:
   provider: github
   owner: AloNeema
-  repo: qcfofferoutline
+  repo: quick-contacts-widget
   releaseType: draft
