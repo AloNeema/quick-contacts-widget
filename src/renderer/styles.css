@@ -68,6 +68,10 @@
     background: transparent;
     color: hsl(var(--foreground));
     font-family: theme(fontFamily.sans);
+    /* Inter alternates that read closest to SF Pro: single-storey a (cv11), open digits (ss01), plus tabular numbers for phones. */
+    font-feature-settings: "cv11", "ss01", "ss03", "tnum";
+    font-variation-settings: "opsz" 14;
+    letter-spacing: -0.006em;
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
     user-select: none;
@@ -301,8 +305,8 @@
   }
 
   .title-display {
-    font-family: '"Segoe UI Variable Display"', '"Segoe UI"', "Inter", system-ui, sans-serif;
-    letter-spacing: -0.01em;
+    font-variation-settings: "opsz" 32;
+    letter-spacing: -0.02em;
     font-weight: 600;
   }
 

@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Segoe UI Variable Text"', '"Segoe UI"', "Inter", "system-ui", "sans-serif"],
+        sans: ['"Inter Variable"', "Inter", '"Segoe UI Variable Text"', '"Segoe UI"', "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
