@@ -49,7 +49,7 @@ export function buildMailtoUri(email: string): string {
   return `mailto:${encodeURIComponent(v).replace("%40", "@")}`;
 }
 
-const LINK_HOSTS = [/(^|\.)linkedin\.com$/i, /(^|\.)outlook\.office\.com$/i, /(^|\.)outlook\.office365\.com$/i, /(^|\.)outlook\.live\.com$/i, /(^|\.)teams\.microsoft\.com$/i, /(^|\.)teams\.cloud\.microsoft$/i, /(^|\.)zoom\.us$/i];
+const LINK_HOSTS = [/(^|\.)linkedin\.com$/i, /(^|\.)outlook\.office\.com$/i, /(^|\.)outlook\.office365\.com$/i, /(^|\.)outlook\.live\.com$/i, /(^|\.)teams\.microsoft\.com$/i, /(^|\.)teams\.cloud\.microsoft$/i, /(^|\.)zoom\.us$/i, /(^|\.)salesforce\.com$/i, /(^|\.)force\.com$/i, /(^|\.)salesforce-setup\.com$/i];
 
 /** Only https links to LinkedIn, Outlook on the web, Teams or Zoom are opened. */
 export function buildLinkedinUri(url: string): string {
@@ -60,7 +60,7 @@ export function buildLinkedinUri(url: string): string {
     throw new DialerError("Invalid LinkedIn URL");
   }
   if (parsed.protocol !== "https:" || !LINK_HOSTS.some((re) => re.test(parsed.hostname))) {
-    throw new DialerError("Only LinkedIn, Outlook, Teams and Zoom links are opened");
+    throw new DialerError("Only LinkedIn, Outlook, Teams, Zoom and Salesforce links are opened");
   }
   return parsed.toString();
 }

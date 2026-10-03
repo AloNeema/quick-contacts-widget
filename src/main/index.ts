@@ -9,6 +9,7 @@ import { applyLaunchAtLogin } from "./autoLaunch";
 import { applyHotkey, releaseHotkey } from "./hotkey";
 import { initM365 } from "./m365";
 import { initUpdater } from "./updater";
+import { initSalesforce } from "./salesforce";
 import { broadcast } from "./windows";
 import { IPC } from "@shared/ipc";
 
@@ -36,6 +37,7 @@ if (!gotLock) {
     createWidgetWindow({ startHidden: process.argv.includes("--hidden") });
     if (!applyHotkey(state.settings.hotkey)) console.warn("hotkey not registered:", state.settings.hotkey);
     initUpdater((s) => broadcast(IPC.updateStatusChanged, s));
+    initSalesforce((s) => broadcast(IPC.sfStatusChanged, s));
     initM365({
       onStatus: (s) => broadcast(IPC.m365StatusChanged, s),
       onPresence: (p) => broadcast(IPC.presenceChanged, p),

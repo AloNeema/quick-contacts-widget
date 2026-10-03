@@ -61,7 +61,7 @@ export function M365Settings() {
           One-time setup in the Azure portal: <b>Microsoft Entra ID › App registrations › New registration</b>. Name it "QCF Contacts", choose
           <i> Accounts in this organizational directory only</i>, and under <b>Authentication › Add a platform › Mobile and desktop applications</b>
           tick <code>http://localhost</code>. Enable <i>Allow public client flows</i>. Then paste the <b>Application (client) ID</b> here. Permissions
-          (User.Read, User.ReadBasic.All, Contacts.Read, People.Read, Presence.Read.All) are requested at sign-in; none need admin consent.
+          (User.Read, User.ReadBasic.All, Contacts.Read, People.Read, Presence.Read.All, Mail.Read, Calendars.Read) are requested at sign-in; none need admin consent.
         </p>
         <div className="grid gap-3 md:grid-cols-[1fr_220px]">
           <div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { CalendarClock, ExternalLink, Loader2, Mail, StickyNote, Video } from "lucide-react";
-import type { Contact, ContactContext } from "@shared/types";
+import { Briefcase, CalendarClock, ExternalLink, Loader2, Mail, StickyNote, Video } from "lucide-react";
+import type { Contact, ContactContext, SalesforceDeals } from "@shared/types";
+import { fmtMoney } from "./ContactRow";
 import { relativeTime } from "@shared/merge";
 import { useContactsStore } from "@renderer/store/useContacts";
 
@@ -20,6 +21,16 @@ export function ContactDetails({ contact }: { contact: Contact }) {
   const showToast = useContactsStore((s) => s.showToast);
   const signedIn = useContactsStore((s) => s.m365.signedIn);
   const [ctx, setCtx] = useState<ContactContext | null>(null);
+  const sfSignedIn = useContactsStore((s) => s.sf.signedIn);
+  const [deals, setDeals] = useState<SalesforceDeals | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setDeals(null);
+    if (contact.sf && sfSignedIn) window.contacts.sfDeals(contact.id).then((d) => alive && setDeals(d)).catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [contact.id, contact.sf, sfSignedIn]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -44,6 +55,41 @@ export function ContactDetails({ contact }: { contact: Contact }) {
           <StickyNote className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
           <span className="whitespace-pre-wrap">{contact.notes}</span>
         </p>
+      ) : null}
+
+      {contact.sf ? (
+        <div className="detail-card rounded-xl px-2.5 py-2">
+          <div className="flex items-center gap-2">
+            <Briefcase className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <button type="button" onClick={() => open(deals?.accountUrl ?? deals?.recordUrl)} className="min-w-0 flex-1 truncate text-left font-medium text-foreground/90 hover:underline underline-offset-2">
+              {contact.sf.accountName ?? (contact.sf.kind === "lead" ? "Lead" : "Salesforce record")}
+            </button>
+            <button type="button" onClick={() => open(deals?.recordUrl)} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground" disabled={!deals?.recordUrl}>
+              Open <ExternalLink className="h-3 w-3" />
+            </button>
+          </div>
+          {deals === null && sfSignedIn ? (
+            <p className="mt-1 flex items-center gap-1.5 pl-5 text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Loading deals…</p>
+          ) : deals?.deals.length ? (
+            <ul className="mt-1.5 space-y-1 pl-5">
+              {deals.deals.map((d) => (
+                <li key={d.id}>
+                  <button type="button" onClick={() => open(d.url)} className="flex w-full items-center gap-2 text-left hover:underline underline-offset-2">
+                    <span className="min-w-0 flex-1 truncate text-foreground/85">{d.name}</span>
+                    <span className="deal-pill shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium">{d.stage}</span>
+                    {d.amount ? <span className="shrink-0 tabular-nums text-muted-foreground">{fmtMoney(d.amount)}</span> : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : deals && !deals.error ? (
+            <p className="mt-1 pl-5 text-muted-foreground">{contact.sf.kind === "lead" ? `Lead · ${contact.sf.topDeal?.stage ?? "open"}` : "No open opportunities."}</p>
+          ) : deals?.error ? (
+            <p className="mt-1 pl-5 text-muted-foreground">{deals.error}</p>
+          ) : !sfSignedIn ? (
+            <p className="mt-1 pl-5 text-muted-foreground">Sign in to Salesforce to load deals.</p>
+          ) : null}
+        </div>
       ) : null}
 
       {!signedIn ? (

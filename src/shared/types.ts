@@ -33,6 +33,15 @@ export interface Contact {
   photo?: ContactPhoto;
   /** Microsoft Graph user id (organization directory) or contact id, set by M365 sync. */
   m365?: { kind: "user" | "contact"; id: string; syncedAt: string };
+  /** Salesforce link set by sync: the Contact (or Lead) and its Account, plus a snapshot of the top open deal. */
+  sf?: {
+    kind: "contact" | "lead";
+    id: string;
+    accountId?: string;
+    accountName?: string;
+    syncedAt: string;
+    topDeal?: { id: string; name: string; stage: string; amount?: number; closeDate?: string };
+  };
   /** Deterministic hue (0-359) used for the initials avatar. */
   hue: number;
   pinned: boolean;
@@ -97,6 +106,49 @@ export interface ContactContext {
   nextMeeting?: { subject: string; start: string; end: string; webLink?: string; joinUrl?: string; location?: string };
 }
 
+export interface SalesforceSettings {
+  /** Connected App consumer key (public client with PKCE, no secret). */
+  consumerKey: string;
+  /** https://login.salesforce.com, https://test.salesforce.com or your My Domain URL. */
+  loginUrl: string;
+  /** Show the top open deal under the name. */
+  showDeals: boolean;
+}
+
+export interface SalesforceStatus {
+  configured: boolean;
+  signedIn: boolean;
+  instanceUrl?: string;
+  username?: string;
+  lastSyncAt?: string;
+  lastError?: string;
+}
+
+export interface SalesforceDeal {
+  id: string;
+  name: string;
+  stage: string;
+  amount?: number;
+  closeDate?: string;
+  url: string;
+}
+
+export interface SalesforceDeals {
+  contactId: string;
+  fetchedAt: string;
+  linked: boolean;
+  recordUrl?: string;
+  accountUrl?: string;
+  accountName?: string;
+  deals: SalesforceDeal[];
+  error?: string;
+}
+
+export interface SalesforceSyncSummary {
+  linked: number;
+  unmatched: number;
+}
+
 export interface M365SyncSummary {
   matched: number;
   photos: number;
@@ -127,6 +179,7 @@ export interface Settings {
   dock: DockSettings;
   /** Check GitHub Releases for new versions (packaged app only). */
   autoUpdate: boolean;
+  salesforce: SalesforceSettings;
   dialer: DialerProvider;
   /** Electron accelerator that shows the widget and focuses search, "" to disable. */
   hotkey: string;

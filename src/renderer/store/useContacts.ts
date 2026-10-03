@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { DEFAULT_SETTINGS } from "@shared/defaults";
-import type { Contact, M365Status, PresenceMap, Settings, UpdateStatus } from "@shared/types";
+import type { Contact, M365Status, PresenceMap, SalesforceStatus, Settings, UpdateStatus } from "@shared/types";
 
 interface ContactsState {
   ready: boolean;
@@ -12,6 +12,7 @@ interface ContactsState {
   presence: PresenceMap;
   m365: M365Status;
   update: UpdateStatus;
+  sf: SalesforceStatus;
   toast: { id: number; message: string; tone: "info" | "error" } | null;
   hydrate: () => Promise<void>;
   setContacts: (contacts: Contact[]) => void;
@@ -24,6 +25,7 @@ let unsubscribe: (() => void) | null = null;
 let unsubscribePresence: (() => void) | null = null;
 let unsubscribeM365: (() => void) | null = null;
 let unsubscribeUpdate: (() => void) | null = null;
+let unsubscribeSf: (() => void) | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useContactsStore = create<ContactsState>((set, get) => ({
@@ -36,6 +38,7 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
   presence: {},
   m365: { configured: false, signedIn: false },
   update: { state: "idle", currentVersion: "", hasToken: false },
+  sf: { configured: false, signedIn: false },
   toast: null,
   hydrate: async () => {
     const state = await window.contacts.getState();
@@ -51,6 +54,9 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
     unsubscribeUpdate?.();
     unsubscribeUpdate = window.contacts.onUpdateStatusChanged((update) => set({ update }));
     void window.contacts.updateStatus().then((update) => set({ update }));
+    unsubscribeSf?.();
+    unsubscribeSf = window.contacts.onSfStatusChanged((sf) => set({ sf }));
+    void window.contacts.sfStatus().then((sf) => set({ sf }));
   },
   setContacts: (contacts) => set({ contacts }),
   setSettings: (settings) => set({ settings }),

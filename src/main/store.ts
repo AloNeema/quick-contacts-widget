@@ -24,6 +24,16 @@ export const contactSchema = z.object({
   group: z.string().max(60).optional(),
   notes: z.string().max(2000).optional(),
   m365: z.object({ kind: z.enum(["user", "contact"]), id: z.string(), syncedAt: z.string() }).optional(),
+  sf: z
+    .object({
+      kind: z.enum(["contact", "lead"]),
+      id: z.string(),
+      accountId: z.string().optional(),
+      accountName: z.string().optional(),
+      syncedAt: z.string(),
+      topDeal: z.object({ id: z.string(), name: z.string(), stage: z.string(), amount: z.number().optional(), closeDate: z.string().optional() }).optional(),
+    })
+    .optional(),
   photo: z
     .union([
       z.object({ kind: z.literal("file"), fileName: z.string() }),
@@ -44,6 +54,9 @@ export const settingsSchema = z.object({
   dialer: dialerSchema,
   hotkey: z.string().max(80).default(DEFAULT_SETTINGS.hotkey),
   autoUpdate: z.boolean().default(true),
+  salesforce: z
+    .object({ consumerKey: z.string().max(300), loginUrl: z.string().url().max(300), showDeals: z.boolean() })
+    .default(DEFAULT_SETTINGS.salesforce),
   dock: z
     .object({ enabled: z.boolean(), side: z.enum(["left", "right"]), y: z.number().optional(), height: z.number().optional() })
     .default(DEFAULT_SETTINGS.dock),

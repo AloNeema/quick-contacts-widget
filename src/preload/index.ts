@@ -32,6 +32,16 @@ const api: ContactsApi = {
   setUpdateToken: (token) => ipcRenderer.invoke(IPC.updateSetToken, token),
   dockExpand: (expanded) => ipcRenderer.invoke(IPC.dockExpand, expanded),
   getContext: (contactId) => ipcRenderer.invoke(IPC.contextGet, contactId),
+  sfStatus: () => ipcRenderer.invoke(IPC.sfStatus),
+  sfSignIn: () => ipcRenderer.invoke(IPC.sfSignIn),
+  sfSignOut: () => ipcRenderer.invoke(IPC.sfSignOut),
+  sfSync: () => ipcRenderer.invoke(IPC.sfSync),
+  sfDeals: (contactId) => ipcRenderer.invoke(IPC.sfDeals, contactId),
+  onSfStatusChanged: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
+    ipcRenderer.on(IPC.sfStatusChanged, listener);
+    return () => ipcRenderer.removeListener(IPC.sfStatusChanged, listener);
+  },
   onUpdateStatusChanged: (cb) => {
     const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
     ipcRenderer.on(IPC.updateStatusChanged, listener);

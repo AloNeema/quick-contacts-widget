@@ -11,6 +11,12 @@ import { Avatar } from "./Avatar";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { QuickActions } from "./QuickActions";
 
+export function fmtMoney(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`;
+  if (n >= 1_000) return `$${Math.round(n / 1_000)}k`;
+  return `$${Math.round(n)}`;
+}
+
 export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle }: { contact: Contact; photosBaseUrl: string; compact: boolean; open: boolean; onToggle: () => void }) {
   const prefetch = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startPrefetch = () => {
@@ -19,6 +25,8 @@ export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle }: 
   };
   const stopPrefetch = () => prefetch.current && clearTimeout(prefetch.current);
   const presence = useContactsStore((s) => (contact.m365?.kind === "user" ? s.presence[contact.m365.id] : undefined));
+  const showDeals = useContactsStore((s) => s.settings.salesforce.showDeals);
+  const deal = showDeals ? contact.sf?.topDeal : undefined;
   const subtitle = [contact.title, contact.company].filter(Boolean).join(" · ") || formatPhoneForDisplay(contact.phone) || contact.email || "";
   return (
     <li
@@ -46,6 +54,11 @@ export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle }: 
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[240px] whitespace-pre-wrap">{contact.notes}</TooltipContent>
             </Tooltip>
+          ) : null}
+          {deal ? (
+            <span className="deal-pill shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium" title={deal.name}>
+              {deal.stage}{deal.amount ? ` · ${fmtMoney(deal.amount)}` : ""}
+            </span>
           ) : null}
           {contact.lastContactedAt ? <span className="ml-auto shrink-0 pl-2 text-[10px] tabular-nums text-muted-foreground/70 group-hover:opacity-0">{relativeTime(contact.lastContactedAt)}</span> : null}
         </div>

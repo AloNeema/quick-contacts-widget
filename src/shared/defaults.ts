@@ -1,4 +1,4 @@
-import type { Appearance, DialerProvider, M365Settings, Settings } from "./types";
+import type { Appearance, DialerProvider, M365Settings, SalesforceSettings, Settings } from "./types";
 
 export const DIALER_PRESETS: Record<Exclude<DialerProvider["id"], "custom">, DialerProvider> = {
   ringcentral: {
@@ -49,12 +49,18 @@ export const DEFAULT_M365: M365Settings = {
 /** Delegated Graph scopes the sync needs. Presence.Read.All is delegated and does not need admin consent. */
 export const M365_SCOPES = ["User.Read", "User.ReadBasic.All", "Contacts.Read", "People.Read", "Presence.Read.All", "Mail.Read", "Calendars.Read"];
 
+export const DEFAULT_SALESFORCE: SalesforceSettings = { consumerKey: "", loginUrl: "https://login.salesforce.com", showDeals: true };
+/** Fixed loopback redirect; register exactly this URL as the Connected App callback. */
+export const SALESFORCE_REDIRECT_URI = "http://localhost:48217/callback";
+export const SALESFORCE_SCOPES = "api refresh_token openid";
+
 export const DEFAULT_SETTINGS: Settings = {
   schemaVersion: 1,
   dialer: DIALER_PRESETS.ringcentral,
   hotkey: DEFAULT_HOTKEY,
   m365: DEFAULT_M365,
   autoUpdate: true,
+  salesforce: DEFAULT_SALESFORCE,
   dock: { enabled: false, side: "right" },
   alwaysOnTop: false,
   launchAtLogin: false,

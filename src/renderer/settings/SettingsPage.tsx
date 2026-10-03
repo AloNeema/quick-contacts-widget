@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Cloud, Contact2, Palette, PhoneCall, Settings as SettingsIcon, Upload } from "lucide-react";
+import { Cloud, CloudCog, Contact2, Palette, PhoneCall, Settings as SettingsIcon, Upload } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@renderer/components/ui/tabs";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { cn } from "@renderer/lib/utils";
@@ -9,8 +9,9 @@ import { DialerSettings } from "./DialerSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { GeneralSettings } from "./GeneralSettings";
 import { M365Settings } from "./M365Settings";
+import { SalesforceSettings } from "./SalesforceSettings";
 
-const TABS = ["contacts", "import", "m365", "dialer", "appearance", "general"] as const;
+const TABS = ["contacts", "import", "m365", "salesforce", "dialer", "appearance", "general"] as const;
 type Tab = (typeof TABS)[number];
 
 export function SettingsPage({ initialTab }: { initialTab?: string }) {
@@ -37,6 +38,7 @@ export function SettingsPage({ initialTab }: { initialTab?: string }) {
               ["contacts", "Contacts", Contact2],
               ["import", "Import", Upload],
               ["m365", "Microsoft 365", Cloud],
+              ["salesforce", "Salesforce", CloudCog],
               ["dialer", "Call & Text", PhoneCall],
               ["appearance", "Appearance", Palette],
               ["general", "General", SettingsIcon],
@@ -58,6 +60,7 @@ export function SettingsPage({ initialTab }: { initialTab?: string }) {
           <TabsContent value="contacts"><ContactsEditor /></TabsContent>
           <TabsContent value="import"><ImportWizard onDone={() => setTab("contacts")} /></TabsContent>
           <TabsContent value="m365"><M365Settings /></TabsContent>
+          <TabsContent value="salesforce"><SalesforceSettings /></TabsContent>
           <TabsContent value="dialer"><DialerSettings /></TabsContent>
           <TabsContent value="appearance"><AppearanceSettings /></TabsContent>
           <TabsContent value="general"><GeneralSettings /></TabsContent>

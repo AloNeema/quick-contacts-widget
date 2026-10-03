@@ -1,4 +1,4 @@
-import type { Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, Settings, UpdateStatus } from "./types";
+import type { Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, UpdateStatus } from "./types";
 
 export const IPC = {
   stateGet: "state:get",
@@ -31,12 +31,18 @@ export const IPC = {
   updateSetToken: "update:set-token",
   dockExpand: "dock:expand",
   contextGet: "context:get",
+  sfStatus: "sf:status",
+  sfSignIn: "sf:sign-in",
+  sfSignOut: "sf:sign-out",
+  sfSync: "sf:sync",
+  sfDeals: "sf:deals",
   // main -> renderer
   stateChanged: "state:changed",
   presenceChanged: "presence:changed",
   focusSearch: "widget:focus-search",
   m365StatusChanged: "m365:status-changed",
   updateStatusChanged: "update:status-changed",
+  sfStatusChanged: "sf:status-changed",
 } as const;
 
 export interface DialRequest {
@@ -80,6 +86,12 @@ export interface ContactsApi {
   dockExpand(expanded: boolean): Promise<void>;
   /** Last email and next meeting with this person from Outlook (needs Microsoft 365 sign-in). */
   getContext(contactId: string): Promise<ContactContext>;
+  sfStatus(): Promise<SalesforceStatus>;
+  sfSignIn(): Promise<SalesforceStatus>;
+  sfSignOut(): Promise<SalesforceStatus>;
+  sfSync(): Promise<{ summary: SalesforceSyncSummary; status: SalesforceStatus }>;
+  sfDeals(contactId: string): Promise<SalesforceDeals>;
+  onSfStatusChanged(cb: (status: SalesforceStatus) => void): () => void;
   onUpdateStatusChanged(cb: (status: UpdateStatus) => void): () => void;
   onStateChanged(cb: (state: { settings: Settings; contacts: Contact[] }) => void): () => void;
   onPresenceChanged(cb: (presence: PresenceMap) => void): () => void;
