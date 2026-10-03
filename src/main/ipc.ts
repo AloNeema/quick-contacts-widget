@@ -9,6 +9,7 @@ import { deletePhoto, deletePhotoForContact, photosBaseUrl, pickPhoto, setPhotoF
 import { pickImportFile } from "./importer";
 import { applyLaunchAtLogin } from "./autoLaunch";
 import {
+  applyDockLayout,
   broadcast,
   createSettingsWindow,
   getSettingsWindow,
@@ -111,6 +112,8 @@ export function registerIpc(): void {
       }
     }
     if (patch.autoUpdate !== undefined) rescheduleUpdates();
+    if (patch.dock && (patch.dock.enabled !== prev.dock.enabled || patch.dock.side !== prev.dock.side)) applyDockLayout(false);
+    if (patch.alwaysOnTop !== undefined && next.dock.enabled) getWidgetWindow()?.setAlwaysOnTop(true, "normal");
     if (patch.m365) {
       await refreshStatus();
       schedulePresence();
@@ -191,6 +194,9 @@ export function registerIpc(): void {
     }
   });
 
+  ipcMain.handle(IPC.dockExpand, (_e, raw: unknown) => {
+    if (getState().settings.dock.enabled) applyDockLayout(z.boolean().parse(raw));
+  });
   ipcMain.handle(IPC.windowResizeBy, (_e, dx: unknown, dy: unknown) => {
     resizeWidgetBy(z.number().parse(dx), z.number().parse(dy));
   });

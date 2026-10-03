@@ -44,6 +44,9 @@ export const settingsSchema = z.object({
   dialer: dialerSchema,
   hotkey: z.string().max(80).default(DEFAULT_SETTINGS.hotkey),
   autoUpdate: z.boolean().default(true),
+  dock: z
+    .object({ enabled: z.boolean(), side: z.enum(["left", "right"]), y: z.number().optional(), height: z.number().optional() })
+    .default(DEFAULT_SETTINGS.dock),
   m365: z
     .object({
       clientId: z.string().max(200),

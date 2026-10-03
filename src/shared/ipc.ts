@@ -29,6 +29,7 @@ export const IPC = {
   updateCheck: "update:check",
   updateInstall: "update:install",
   updateSetToken: "update:set-token",
+  dockExpand: "dock:expand",
   // main -> renderer
   stateChanged: "state:changed",
   presenceChanged: "presence:changed",
@@ -74,6 +75,8 @@ export interface ContactsApi {
   checkForUpdates(): Promise<UpdateStatus>;
   installUpdate(): Promise<void>;
   setUpdateToken(token: string): Promise<UpdateStatus>;
+  /** Dock mode: grow the strip into the full panel (true) or shrink back (false). */
+  dockExpand(expanded: boolean): Promise<void>;
   onUpdateStatusChanged(cb: (status: UpdateStatus) => void): () => void;
   onStateChanged(cb: (state: { settings: Settings; contacts: Contact[] }) => void): () => void;
   onPresenceChanged(cb: (presence: PresenceMap) => void): () => void;

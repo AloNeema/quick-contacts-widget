@@ -8,6 +8,7 @@ const ACCENTS = [212, 262, 330, 160, 24, 45];
 
 export function AppearanceSettings() {
   const appearance = useContactsStore((s) => s.settings.appearance);
+  const dock = useContactsStore((s) => s.settings.dock);
   const updateSettings = useContactsStore((s) => s.updateSettings);
   const set = (patch: Partial<typeof appearance>) => void updateSettings({ appearance: { ...appearance, ...patch } });
 
@@ -59,6 +60,23 @@ export function AppearanceSettings() {
               {d}
             </button>
           ))}
+        </div>
+      </Row>
+      <Row label="Dock to screen edge" hint="Collapses the widget into a slim strip of avatars on one edge of the screen; it expands when you hover and stays above other windows.">
+        <div className="flex items-center gap-3">
+          <Switch checked={dock.enabled} onCheckedChange={(v) => void updateSettings({ dock: { ...dock, enabled: v } })} />
+          <div className="flex gap-2">
+            {(["left", "right"] as const).map((side) => (
+              <button
+                key={side}
+                type="button"
+                onClick={() => void updateSettings({ dock: { ...dock, side } })}
+                className={cn("rounded-lg border px-3 py-1.5 text-sm capitalize", dock.side === side && "border-primary bg-primary/10")}
+              >
+                {side}
+              </button>
+            ))}
+          </div>
         </div>
       </Row>
       <Row label="Windows 11 acrylic" hint="Lets Windows blur the real desktop behind the panel (Windows 11). Turn off if the panel renders black on your graphics driver; the widget then uses its own glass effect.">

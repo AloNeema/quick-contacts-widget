@@ -55,6 +55,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hotkey: DEFAULT_HOTKEY,
   m365: DEFAULT_M365,
   autoUpdate: true,
+  dock: { enabled: false, side: "right" },
   alwaysOnTop: false,
   launchAtLogin: false,
   appearance: DEFAULT_APPEARANCE,
@@ -62,3 +63,4 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export const WIDGET_DEFAULT_SIZE = { width: 340, height: 520 };
 export const WIDGET_MIN_SIZE = { width: 280, height: 220 };
+export const DOCK_STRIP_WIDTH = 76;

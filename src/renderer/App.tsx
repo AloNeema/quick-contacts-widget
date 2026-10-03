@@ -36,6 +36,11 @@ export default function App() {
     document.body.dataset.acrylic = String(acrylic);
   }, [appearance, acrylic]);
 
+  const dock = useContactsStore((s) => s.settings.dock);
+  useEffect(() => {
+    document.body.dataset.dock = dock.enabled ? dock.side : "";
+  }, [dock]);
+
   const isSettings = route.startsWith("/settings");
   useEffect(() => {
     document.body.dataset.surface = isSettings ? "settings" : "widget";

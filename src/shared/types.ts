@@ -104,8 +104,17 @@ export interface UpdateStatus {
   hasToken: boolean;
 }
 
+export interface DockSettings {
+  enabled: boolean;
+  side: "left" | "right";
+  /** Strip position/height on the docked display; unset = centred, 70% of the work area. */
+  y?: number;
+  height?: number;
+}
+
 export interface Settings {
   schemaVersion: 1;
+  dock: DockSettings;
   /** Check GitHub Releases for new versions (packaged app only). */
   autoUpdate: boolean;
   dialer: DialerProvider;

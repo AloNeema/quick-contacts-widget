@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pin, PinOff, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
+import { PanelLeftClose, PanelRightClose, Pin, PinOff, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
 import { filterContacts, groupsOf, recentContacts } from "@shared/merge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
 import { cn } from "@renderer/lib/utils";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { ContactRow } from "./ContactRow";
 import { RecentsStrip } from "./RecentsStrip";
+import { DockStrip } from "./DockStrip";
 import { ResizeGrip } from "./ResizeGrip";
 
 function HeaderButton({ label, onClick, active, children }: { label: string; onClick: () => void; active?: boolean; children: React.ReactNode }) {
@@ -36,6 +37,31 @@ export function WidgetPanel() {
   const toast = useContactsStore((s) => s.toast);
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<string | undefined>(undefined);
+  const updateSettings = useContactsStore((s) => s.updateSettings);
+  const dock = settings.dock;
+  const [dockExpanded, setDockExpanded] = useState(false);
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const expandDock = () => {
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    if (!dock.enabled || dockExpanded) return;
+    setDockExpanded(true);
+    void window.contacts.dockExpand(true);
+  };
+  const collapseDockSoon = () => {
+    if (!dock.enabled) return;
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    collapseTimer.current = setTimeout(() => {
+      setDockExpanded(false);
+      void window.contacts.dockExpand(false);
+    }, 550);
+  };
+  useEffect(() => {
+    if (!dock.enabled) setDockExpanded(false);
+  }, [dock.enabled]);
+  const toggleDock = () => {
+    setDockExpanded(false);
+    void updateSettings({ dock: { ...dock, enabled: !dock.enabled } });
+  };
   const searchRef = useRef<HTMLInputElement>(null);
   const showToast = useContactsStore((s) => s.showToast);
 
@@ -56,11 +82,19 @@ export function WidgetPanel() {
   const pinnedCount = visible.filter((c) => c.pinned).length;
   const recents = useMemo(() => recentContacts(contacts, 6), [contacts]);
 
+  if (dock.enabled && !dockExpanded) {
+    return (
+      <div className="h-full w-full" onMouseEnter={expandDock}>
+        <DockStrip contacts={visible} photosBaseUrl={photosBaseUrl} side={dock.side} onUndock={toggleDock} />
+      </div>
+    );
+  }
+
   return (
-    <div className={cn("h-full w-full", acrylic ? "p-0" : "p-2")}>
+    <div className={cn("h-full w-full", acrylic || dock.enabled ? "p-0" : "p-2")} onMouseEnter={expandDock} onMouseLeave={collapseDockSoon}>
       <div className="glass-panel flex h-full w-full flex-col">
         {/* Header: the only drag region */}
-        <header className="drag relative z-10 flex items-center gap-2 px-3.5 pb-1.5 pt-3.5">
+        <header className={cn("relative z-10 flex items-center gap-2 px-3.5 pb-1.5 pt-3.5", dock.enabled ? "no-drag" : "drag")}>
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <span className="status-dot h-2 w-2 shrink-0 rounded-full" aria-hidden />
             <h1 className="title-display truncate text-[14px] text-foreground/95">Contacts</h1>
@@ -68,6 +102,9 @@ export function WidgetPanel() {
           </div>
           <HeaderButton label={settings.alwaysOnTop ? "Unpin from top" : "Keep on top"} active={settings.alwaysOnTop} onClick={() => void window.contacts.toggleAlwaysOnTop()}>
             {settings.alwaysOnTop ? <Pin className="h-3.5 w-3.5 fill-current" /> : <PinOff className="h-3.5 w-3.5" />}
+          </HeaderButton>
+          <HeaderButton label={dock.enabled ? "Undock" : `Dock to ${dock.side} edge`} active={dock.enabled} onClick={toggleDock}>
+            {dock.side === "right" ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
           </HeaderButton>
           <HeaderButton label="Settings" onClick={() => void window.contacts.openSettings()}>
             <Settings2 className="h-3.5 w-3.5" />
