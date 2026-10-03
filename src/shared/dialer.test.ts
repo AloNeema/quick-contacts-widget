@@ -40,5 +40,7 @@ describe("schemeOf / mailto / linkedin", () => {
     expect(buildLinkedinUri("https://www.linkedin.com/in/someone/")).toBe("https://www.linkedin.com/in/someone/");
     expect(() => buildLinkedinUri("http://linkedin.com/in/x")).toThrow();
     expect(() => buildLinkedinUri("https://evil.com/linkedin.com")).toThrow();
+    expect(buildLinkedinUri("https://outlook.office.com/mail/id/abc")).toContain("outlook.office.com");
+    expect(buildLinkedinUri("https://teams.microsoft.com/l/meetup-join/x")).toContain("teams.microsoft.com");
   });
 });

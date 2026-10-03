@@ -1,4 +1,4 @@
-import type { Contact, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, Settings, UpdateStatus } from "./types";
+import type { Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, Settings, UpdateStatus } from "./types";
 
 export const IPC = {
   stateGet: "state:get",
@@ -30,6 +30,7 @@ export const IPC = {
   updateInstall: "update:install",
   updateSetToken: "update:set-token",
   dockExpand: "dock:expand",
+  contextGet: "context:get",
   // main -> renderer
   stateChanged: "state:changed",
   presenceChanged: "presence:changed",
@@ -77,6 +78,8 @@ export interface ContactsApi {
   setUpdateToken(token: string): Promise<UpdateStatus>;
   /** Dock mode: grow the strip into the full panel (true) or shrink back (false). */
   dockExpand(expanded: boolean): Promise<void>;
+  /** Last email and next meeting with this person from Outlook (needs Microsoft 365 sign-in). */
+  getContext(contactId: string): Promise<ContactContext>;
   onUpdateStatusChanged(cb: (status: UpdateStatus) => void): () => void;
   onStateChanged(cb: (state: { settings: Settings; contacts: Contact[] }) => void): () => void;
   onPresenceChanged(cb: (presence: PresenceMap) => void): () => void;

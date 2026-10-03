@@ -40,6 +40,7 @@ export function WidgetPanel() {
   const updateSettings = useContactsStore((s) => s.updateSettings);
   const dock = settings.dock;
   const [dockExpanded, setDockExpanded] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const expandDock = () => {
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
@@ -171,7 +172,7 @@ export function WidgetPanel() {
                   {i === pinnedCount && pinnedCount > 0 && !query ? (
                     <div className="mx-2.5 my-1.5 h-px bg-foreground/10" role="separator" />
                   ) : null}
-                  <ContactRow contact={c} photosBaseUrl={photosBaseUrl} compact={compact} />
+                  <ContactRow contact={c} photosBaseUrl={photosBaseUrl} compact={compact} open={openId === c.id} onToggle={() => setOpenId(openId === c.id ? null : c.id)} />
                 </li>
               ))}
             </ul>

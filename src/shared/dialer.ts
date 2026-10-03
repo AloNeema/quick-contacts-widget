@@ -49,7 +49,9 @@ export function buildMailtoUri(email: string): string {
   return `mailto:${encodeURIComponent(v).replace("%40", "@")}`;
 }
 
-/** Only https LinkedIn profile URLs are opened. */
+const LINK_HOSTS = [/(^|\.)linkedin\.com$/i, /(^|\.)outlook\.office\.com$/i, /(^|\.)outlook\.office365\.com$/i, /(^|\.)outlook\.live\.com$/i, /(^|\.)teams\.microsoft\.com$/i, /(^|\.)teams\.cloud\.microsoft$/i, /(^|\.)zoom\.us$/i];
+
+/** Only https links to LinkedIn, Outlook on the web, Teams or Zoom are opened. */
 export function buildLinkedinUri(url: string): string {
   let parsed: URL;
   try {
@@ -57,8 +59,8 @@ export function buildLinkedinUri(url: string): string {
   } catch {
     throw new DialerError("Invalid LinkedIn URL");
   }
-  if (parsed.protocol !== "https:" || !/(^|\.)linkedin\.com$/i.test(parsed.hostname)) {
-    throw new DialerError("Only https://linkedin.com links are opened");
+  if (parsed.protocol !== "https:" || !LINK_HOSTS.some((re) => re.test(parsed.hostname))) {
+    throw new DialerError("Only LinkedIn, Outlook, Teams and Zoom links are opened");
   }
   return parsed.toString();
 }

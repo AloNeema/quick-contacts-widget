@@ -15,7 +15,7 @@ import {
   type TokenCacheContext,
 } from "@azure/msal-node";
 import { M365_SCOPES } from "@shared/defaults";
-import type { M365Status, M365SyncSummary, PresenceAvailability, PresenceMap } from "@shared/types";
+import type { ContactContext, M365Status, M365SyncSummary, PresenceAvailability, PresenceMap } from "@shared/types";
 import { getState, photosDir, setContacts } from "./store";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
@@ -267,6 +267,90 @@ export async function syncContacts(): Promise<{ summary: M365SyncSummary; status
   schedulePresence();
   void pollPresence();
   return { summary, status: next };
+}
+
+// ---- Outlook context (last email, next meeting) -------------------------
+
+const CONTEXT_TTL_MS = 10 * 60 * 1000;
+const CALENDAR_TTL_MS = 5 * 60 * 1000;
+const contextCache = new Map<string, ContactContext>();
+let calendarCache: { fetchedAt: number; events: GraphEvent[] } | null = null;
+
+interface GraphMessage {
+  subject?: string;
+  receivedDateTime: string;
+  bodyPreview?: string;
+  webLink?: string;
+  from?: { emailAddress?: { address?: string } };
+}
+interface GraphEvent {
+  subject?: string;
+  start: { dateTime: string; timeZone: string };
+  end: { dateTime: string; timeZone: string };
+  webLink?: string;
+  isCancelled?: boolean;
+  location?: { displayName?: string };
+  onlineMeeting?: { joinUrl?: string } | null;
+  attendees?: { emailAddress?: { address?: string } }[];
+  organizer?: { emailAddress?: { address?: string } };
+}
+
+async function upcomingEvents(accessToken: string): Promise<GraphEvent[]> {
+  if (calendarCache && Date.now() - calendarCache.fetchedAt < CALENDAR_TTL_MS) return calendarCache.events;
+  const start = new Date();
+  const end = new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const url = `/me/calendarView?startDateTime=${encodeURIComponent(start.toISOString())}&endDateTime=${encodeURIComponent(end.toISOString())}&$orderby=start/dateTime&$top=100&$select=subject,start,end,webLink,isCancelled,location,onlineMeeting,attendees,organizer`;
+  const res = await graph<{ value: GraphEvent[] }>(accessToken, url, { headers: { Prefer: 'outlook.timezone="UTC"' } });
+  calendarCache = { fetchedAt: Date.now(), events: (res?.value ?? []).filter((e) => !e.isCancelled) };
+  return calendarCache.events;
+}
+
+export async function getContactContext(contactId: string): Promise<ContactContext> {
+  const cached = contextCache.get(contactId);
+  if (cached && Date.now() - new Date(cached.fetchedAt).getTime() < CONTEXT_TTL_MS) return cached;
+  const contact = getState().contacts.find((c) => c.id === contactId);
+  const base: ContactContext = { contactId, fetchedAt: new Date().toISOString(), available: false };
+  if (!contact?.email) return { ...base, error: "No email on this contact" };
+  if (!status.signedIn) return { ...base, error: "Sign in to Microsoft 365 to see email and meetings" };
+  const accessToken = await token();
+  if (!accessToken) return { ...base, error: status.lastError ?? "Not signed in" };
+
+  const email = contact.email.toLowerCase();
+  const result: ContactContext = { ...base, available: true };
+  try {
+    const search = encodeURIComponent(`"participants:${email}"`);
+    const msgs = await graph<{ value: GraphMessage[] }>(accessToken, `/me/messages?$search=${search}&$top=1&$select=subject,receivedDateTime,bodyPreview,webLink,from`);
+    const m = msgs?.value[0];
+    if (m) {
+      result.lastEmail = {
+        subject: m.subject || "(no subject)",
+        receivedAt: m.receivedDateTime,
+        direction: m.from?.emailAddress?.address?.toLowerCase() === email ? "in" : "out",
+        preview: (m.bodyPreview ?? "").slice(0, 140),
+        webLink: m.webLink,
+      };
+    }
+  } catch (err) {
+    result.error = err instanceof Error ? err.message : String(err);
+  }
+  try {
+    const events = await upcomingEvents(accessToken);
+    const ev = events.find((e) => e.attendees?.some((a) => a.emailAddress?.address?.toLowerCase() === email) || e.organizer?.emailAddress?.address?.toLowerCase() === email);
+    if (ev) {
+      result.nextMeeting = {
+        subject: ev.subject || "(no title)",
+        start: `${ev.start.dateTime}Z`.replace(/Z?Z$/, "Z"),
+        end: `${ev.end.dateTime}Z`.replace(/Z?Z$/, "Z"),
+        webLink: ev.webLink,
+        joinUrl: ev.onlineMeeting?.joinUrl ?? undefined,
+        location: ev.location?.displayName || undefined,
+      };
+    }
+  } catch (err) {
+    result.error = result.error ?? (err instanceof Error ? err.message : String(err));
+  }
+  contextCache.set(contactId, result);
+  return result;
 }
 
 export function getPresence(): PresenceMap {

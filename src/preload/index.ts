@@ -31,6 +31,7 @@ const api: ContactsApi = {
   installUpdate: () => ipcRenderer.invoke(IPC.updateInstall),
   setUpdateToken: (token) => ipcRenderer.invoke(IPC.updateSetToken, token),
   dockExpand: (expanded) => ipcRenderer.invoke(IPC.dockExpand, expanded),
+  getContext: (contactId) => ipcRenderer.invoke(IPC.contextGet, contactId),
   onUpdateStatusChanged: (cb) => {
     const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
     ipcRenderer.on(IPC.updateStatusChanged, listener);

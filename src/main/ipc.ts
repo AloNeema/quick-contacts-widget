@@ -19,7 +19,7 @@ import {
 } from "./windows";
 import { refreshTrayMenu } from "./tray";
 import { applyHotkey } from "./hotkey";
-import { getPresence, refreshStatus, schedulePresence, signIn, signOut, syncContacts } from "./m365";
+import { getContactContext, getPresence, refreshStatus, schedulePresence, signIn, signOut, syncContacts } from "./m365";
 import { checkForUpdates, getUpdateStatus, installUpdate, rescheduleUpdates, setUpdateToken } from "./updater";
 
 const incomingSchema = z.object({
@@ -194,6 +194,7 @@ export function registerIpc(): void {
     }
   });
 
+  ipcMain.handle(IPC.contextGet, (_e, raw: unknown) => getContactContext(z.string().parse(raw)));
   ipcMain.handle(IPC.dockExpand, (_e, raw: unknown) => {
     if (getState().settings.dock.enabled) applyDockLayout(z.boolean().parse(raw));
   });

@@ -87,6 +87,16 @@ export interface M365Status {
 export type PresenceAvailability = "Available" | "Busy" | "DoNotDisturb" | "Away" | "BeRightBack" | "Offline" | "PresenceUnknown";
 export type PresenceMap = Record<string, { availability: PresenceAvailability; activity: string }>;
 
+/** Live Outlook context for one person, fetched on demand and cached briefly. */
+export interface ContactContext {
+  contactId: string;
+  fetchedAt: string;
+  available: boolean;
+  error?: string;
+  lastEmail?: { subject: string; receivedAt: string; direction: "in" | "out"; preview: string; webLink?: string };
+  nextMeeting?: { subject: string; start: string; end: string; webLink?: string; joinUrl?: string; location?: string };
+}
+
 export interface M365SyncSummary {
   matched: number;
   photos: number;

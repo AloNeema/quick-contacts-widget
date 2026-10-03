@@ -47,7 +47,7 @@ export const DEFAULT_M365: M365Settings = {
 };
 
 /** Delegated Graph scopes the sync needs. Presence.Read.All is delegated and does not need admin consent. */
-export const M365_SCOPES = ["User.Read", "User.ReadBasic.All", "Contacts.Read", "People.Read", "Presence.Read.All"];
+export const M365_SCOPES = ["User.Read", "User.ReadBasic.All", "Contacts.Read", "People.Read", "Presence.Read.All", "Mail.Read", "Calendars.Read"];
 
 export const DEFAULT_SETTINGS: Settings = {
   schemaVersion: 1,
