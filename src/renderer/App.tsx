@@ -19,6 +19,9 @@ export default function App() {
   const hydrate = useContactsStore((s) => s.hydrate);
   const appearance = useContactsStore((s) => s.settings.appearance);
   const ready = useContactsStore((s) => s.ready);
+  const platform = useContactsStore((s) => s.platform);
+  // Acrylic is a Windows 11 material; elsewhere the CSS glass does the work.
+  const acrylic = appearance.acrylic && platform === "win32";
 
   useEffect(() => {
     void hydrate();
@@ -30,7 +33,8 @@ export default function App() {
     root.style.setProperty("--accent-hue", String(appearance.accentHue));
     root.style.setProperty("--panel-opacity", String(appearance.opacity));
     root.style.setProperty("--panel-blur", `${appearance.blur}px`);
-  }, [appearance]);
+    document.body.dataset.acrylic = String(acrylic);
+  }, [appearance, acrylic]);
 
   const isSettings = route.startsWith("/settings");
   useEffect(() => {

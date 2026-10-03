@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --radius: 14px;
+    --radius: 16px;
     --accent-hue: 212;
-    --panel-opacity: 0.62;
-    --panel-blur: 24px;
+    --panel-opacity: 0.38;
+    --panel-blur: 28px;
 
     /* dark theme (default) */
     --background: 222 20% 8%;
@@ -104,42 +104,222 @@
     -webkit-app-region: no-drag;
   }
 
+  /* ---- Liquid glass panel -------------------------------------------------
+     Three layers: tinted blur (background), refractive edge (::before, a
+     gradient border drawn with a mask so it only paints the 1px rim), and a
+     soft specular sheen (::after). In acrylic mode Windows blurs the desktop
+     behind the window, so the tint goes lighter and the panel fills the window. */
   .glass-panel {
     position: relative;
-    background: hsl(var(--glass-bg) / var(--panel-opacity));
-    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.4);
-    backdrop-filter: blur(var(--panel-blur)) saturate(1.4);
-    border: 1px solid hsl(var(--border));
-    box-shadow: var(--glass-shadow), inset 0 1px 0 hsl(var(--glass-highlight));
-    border-radius: 22px;
+    isolation: isolate;
+    border-radius: 24px;
+    background:
+      linear-gradient(160deg, hsl(var(--glass-highlight) / 0.10) 0%, transparent 42%),
+      hsl(var(--glass-bg) / var(--panel-opacity));
+    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.6) brightness(1.05);
+    backdrop-filter: blur(var(--panel-blur)) saturate(1.6) brightness(1.05);
+    box-shadow:
+      var(--glass-shadow),
+      inset 0 1px 0 hsl(var(--glass-highlight)),
+      inset 0 -1px 0 hsl(0 0% 0% / 0.18),
+      inset 0 0 0 1px hsl(0 0% 100% / 0.04);
     overflow: hidden;
+    animation: panel-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .glass-panel::before {
+    /* refractive rim: brighter at top-left where the "light" comes from */
     content: "";
     position: absolute;
     inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      hsl(0 0% 100% / 0.55) 0%,
+      hsl(0 0% 100% / 0.12) 30%,
+      hsl(0 0% 100% / 0.04) 55%,
+      hsl(var(--accent-hue) 90% 70% / 0.25) 100%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .glass-panel::after {
+    /* specular sheen + accent bloom */
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     pointer-events: none;
     background:
-      radial-gradient(120% 80% at 0% 0%, hsl(var(--accent-hue) 90% 60% / 0.18), transparent 60%),
-      radial-gradient(100% 60% at 100% 100%, hsl(calc(var(--accent-hue) + 40) 90% 60% / 0.1), transparent 60%);
+      radial-gradient(140% 70% at 10% -10%, hsl(0 0% 100% / 0.16), transparent 55%),
+      radial-gradient(90% 55% at 0% 0%, hsl(var(--accent-hue) 95% 65% / 0.22), transparent 60%),
+      radial-gradient(80% 50% at 100% 100%, hsl(calc(var(--accent-hue) + 50) 90% 60% / 0.14), transparent 60%);
+    z-index: 0;
+  }
+  .glass-panel > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Light glass needs more body to stay legible over dark wallpapers. */
+  :root[data-theme="light"] .glass-panel {
+    background:
+      linear-gradient(160deg, hsl(0 0% 100% / 0.35) 0%, transparent 50%),
+      hsl(var(--glass-bg) / max(var(--panel-opacity), 0.62));
+    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.3) brightness(1.15);
+    backdrop-filter: blur(var(--panel-blur)) saturate(1.3) brightness(1.15);
+  }
+  :root[data-theme="light"] .glass-panel::before {
+    background: linear-gradient(135deg, hsl(0 0% 100% / 0.95), hsl(0 0% 100% / 0.5) 40%, hsl(0 0% 100% / 0.3) 70%, hsl(var(--accent-hue) 90% 70% / 0.35));
+  }
+  :root[data-theme="light"] .glass-inset {
+    background: hsl(0 0% 100% / 0.55);
+  }
+  :root[data-theme="light"] .contact-row:hover,
+  :root[data-theme="light"] .contact-row:focus-within {
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.75), hsl(0 0% 100% / 0.55));
+  }
+
+  /* Acrylic mode: Windows draws the blur, so the panel is the window. */
+  body[data-acrylic="true"] .glass-panel {
+    border-radius: 10px;
+    background:
+      linear-gradient(160deg, hsl(var(--glass-highlight) / 0.08) 0%, transparent 42%),
+      hsl(var(--glass-bg) / calc(var(--panel-opacity) * 0.7));
+    -webkit-backdrop-filter: saturate(1.4);
+    backdrop-filter: saturate(1.4);
+    box-shadow: inset 0 1px 0 hsl(var(--glass-highlight)), inset 0 0 0 1px hsl(0 0% 100% / 0.05);
+  }
+
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* ---- Secondary glass surfaces (sit ON the panel) ---------------------- */
+  .glass-inset {
+    background: hsl(var(--foreground) / 0.065);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.10),
+      inset 0 0 0 1px hsl(0 0% 100% / 0.05),
+      0 1px 2px hsl(0 0% 0% / 0.12);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    transition: box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1), background-color 220ms;
+  }
+  .glass-inset:focus-within {
+    background: hsl(var(--foreground) / 0.09);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.14),
+      0 0 0 1px hsl(var(--primary) / 0.55),
+      0 0 0 4px hsl(var(--primary) / 0.18);
   }
 
   .action-btn {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-full text-foreground/80 transition-all duration-150;
-    background: hsl(var(--foreground) / 0.06);
-    border: 1px solid hsl(var(--foreground) / 0.08);
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-full text-foreground/85;
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.14), hsl(0 0% 100% / 0.04));
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.22),
+      inset 0 0 0 1px hsl(0 0% 100% / 0.08),
+      0 2px 6px hsl(0 0% 0% / 0.22);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    transition:
+      transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      background 200ms,
+      box-shadow 200ms,
+      color 200ms;
   }
   .action-btn:hover {
     @apply text-primary-foreground;
-    background: hsl(var(--primary));
-    border-color: hsl(var(--primary));
-    transform: translateY(-1px);
+    background: linear-gradient(180deg, hsl(var(--accent-hue) 90% 66%), hsl(var(--accent-hue) 85% 52%));
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.45),
+      0 4px 14px hsl(var(--accent-hue) 90% 55% / 0.45);
+    transform: translateY(-1px) scale(1.06);
   }
   .action-btn:active {
-    transform: translateY(0);
+    transform: scale(0.96);
+    transition-duration: 80ms;
   }
   .action-btn:disabled {
-    opacity: 0.3;
+    opacity: 0.28;
     pointer-events: none;
+  }
+
+  .avatar-ring {
+    box-shadow:
+      0 0 0 1.5px hsl(0 0% 100% / 0.22),
+      0 0 0 3px hsl(0 0% 0% / 0.12),
+      0 4px 10px hsl(0 0% 0% / 0.28);
+    transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms;
+  }
+  .group:hover .avatar-ring {
+    transform: scale(1.05);
+    box-shadow:
+      0 0 0 1.5px hsl(0 0% 100% / 0.4),
+      0 0 0 3px hsl(var(--primary) / 0.35),
+      0 6px 16px hsl(0 0% 0% / 0.32);
+  }
+
+  .contact-row {
+    transition: background-color 180ms, transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms;
+  }
+  .contact-row:hover,
+  .contact-row:focus-within {
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.10), hsl(0 0% 100% / 0.05));
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.12),
+      0 4px 14px hsl(0 0% 0% / 0.18);
+    transform: translateY(-1px);
+  }
+
+  .header-btn {
+    transition: background-color 180ms, color 180ms, transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .header-btn:hover {
+    transform: scale(1.1);
+  }
+  .header-btn:active {
+    transform: scale(0.94);
+  }
+
+  .status-dot {
+    background: radial-gradient(circle at 35% 35%, hsl(var(--accent-hue) 100% 85%), hsl(var(--accent-hue) 90% 58%) 60%);
+    box-shadow:
+      0 0 0 2px hsl(var(--accent-hue) 90% 60% / 0.25),
+      0 0 12px hsl(var(--accent-hue) 95% 62% / 0.7);
+  }
+
+  .title-display {
+    font-family: '"Segoe UI Variable Display"', '"Segoe UI"', "Inter", system-ui, sans-serif;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+
+  .toast-glass {
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.2), 0 8px 24px hsl(0 0% 0% / 0.35);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glass-panel,
+    .action-btn,
+    .avatar-ring,
+    .contact-row,
+    .header-btn {
+      animation: none;
+      transition: none;
+    }
   }
 }

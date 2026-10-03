@@ -16,7 +16,7 @@ export function Avatar({ contact, photosBaseUrl, size = 40, className }: { conta
         draggable={false}
         onError={() => setBroken(true)}
         style={style}
-        className={cn("shrink-0 rounded-full object-cover ring-1 ring-white/15 shadow-sm", className)}
+        className={cn("avatar-ring shrink-0 rounded-full object-cover", className)}
       />
     );
   }
@@ -24,9 +24,10 @@ export function Avatar({ contact, photosBaseUrl, size = 40, className }: { conta
     <div
       style={{
         ...style,
-        background: `linear-gradient(135deg, hsl(${contact.hue} 70% 55%), hsl(${(contact.hue + 40) % 360} 70% 40%))`,
+        background: `radial-gradient(circle at 30% 25%, hsl(0 0% 100% / 0.28), transparent 45%), linear-gradient(135deg, hsl(${contact.hue} 72% 58%), hsl(${(contact.hue + 40) % 360} 70% 40%))`,
+        textShadow: "0 1px 2px rgb(0 0 0 / 0.25)",
       }}
-      className={cn("flex shrink-0 select-none items-center justify-center rounded-full font-semibold tracking-wide text-white ring-1 ring-white/15 shadow-sm", className)}
+      className={cn("avatar-ring flex shrink-0 select-none items-center justify-center rounded-full font-semibold tracking-wide text-white", className)}
       aria-hidden
     >
       {initialsOf(contact.name)}

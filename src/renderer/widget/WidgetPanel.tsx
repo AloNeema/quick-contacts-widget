@@ -16,7 +16,7 @@ function HeaderButton({ label, onClick, active, children }: { label: string; onC
           aria-label={label}
           onClick={onClick}
           className={cn(
-            "no-drag inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground",
+            "header-btn no-drag inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
             active && "text-primary",
           )}
         >
@@ -35,18 +35,19 @@ export function WidgetPanel() {
   const toast = useContactsStore((s) => s.toast);
   const [query, setQuery] = useState("");
   const compact = settings.appearance.density === "compact";
+  const acrylic = settings.appearance.acrylic && useContactsStore.getState().platform === "win32";
 
   const visible = useMemo(() => filterContacts(contacts, query), [contacts, query]);
   const pinnedCount = visible.filter((c) => c.pinned).length;
 
   return (
-    <div className="h-full w-full p-2">
+    <div className={cn("h-full w-full", acrylic ? "p-0" : "p-2")}>
       <div className="glass-panel flex h-full w-full flex-col">
         {/* Header: the only drag region */}
-        <header className="drag relative z-10 flex items-center gap-2 px-3 pb-1 pt-3">
+        <header className="drag relative z-10 flex items-center gap-2 px-3.5 pb-1.5 pt-3.5">
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]" aria-hidden />
-            <h1 className="truncate text-[13px] font-semibold tracking-wide text-foreground/90">Contacts</h1>
+            <span className="status-dot h-2 w-2 shrink-0 rounded-full" aria-hidden />
+            <h1 className="title-display truncate text-[14px] text-foreground/95">Contacts</h1>
             <span className="text-[11px] tabular-nums text-muted-foreground">{contacts.length}</span>
           </div>
           <HeaderButton label={settings.alwaysOnTop ? "Unpin from top" : "Keep on top"} active={settings.alwaysOnTop} onClick={() => void window.contacts.toggleAlwaysOnTop()}>
@@ -62,14 +63,14 @@ export function WidgetPanel() {
 
         {/* Search */}
         <div className="relative z-10 px-3 pb-2">
-          <div className="no-drag relative">
+          <div className="no-drag glass-inset relative rounded-xl">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Escape" && setQuery("")}
               placeholder="Search name, company, number…"
-              className="h-8 w-full rounded-xl border border-foreground/10 bg-foreground/[0.06] pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground/80 focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="h-8 w-full rounded-xl bg-transparent pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground/80 focus:outline-none"
             />
           </div>
         </div>
@@ -98,8 +99,8 @@ export function WidgetPanel() {
           <div
             role="status"
             className={cn(
-              "no-drag absolute inset-x-3 bottom-3 z-20 rounded-xl border px-3 py-2 text-xs shadow-lg animate-fade-up",
-              toast.tone === "error" ? "border-destructive/40 bg-destructive/90 text-destructive-foreground" : "border-foreground/10 bg-card/95 text-foreground",
+              "toast-glass no-drag absolute inset-x-3 bottom-3 z-20 rounded-xl border px-3 py-2 text-xs animate-fade-up",
+              toast.tone === "error" ? "border-destructive/40 bg-destructive/85 text-destructive-foreground" : "border-white/10 bg-card/70 text-foreground",
             )}
           >
             {toast.message}

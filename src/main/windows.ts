@@ -61,6 +61,7 @@ export function createWidgetWindow(opts: { startHidden?: boolean } = {}): Browse
     transparent: true,
     backgroundColor: "#00000000",
     hasShadow: false,
+    roundedCorners: true,
     resizable: false,
     minimizable: false,
     maximizable: false,

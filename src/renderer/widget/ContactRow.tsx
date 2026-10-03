@@ -10,7 +10,7 @@ export function ContactRow({ contact, photosBaseUrl, compact }: { contact: Conta
   return (
     <li
       className={cn(
-        "group no-drag relative flex items-center gap-3 rounded-2xl px-2.5 transition-colors duration-150 hover:bg-foreground/[0.07] focus-within:bg-foreground/[0.07]",
+        "contact-row group no-drag relative flex items-center gap-3 rounded-2xl px-2.5",
         compact ? "py-1.5" : "py-2",
       )}
     >
@@ -25,8 +25,8 @@ export function ContactRow({ contact, photosBaseUrl, compact }: { contact: Conta
       {/* Actions float over the right edge on hover so names keep the full row width otherwise. */}
       <div
         className={cn(
-          "pointer-events-none absolute inset-y-1 right-1.5 flex items-center rounded-full pl-6 opacity-0 transition-opacity duration-150",
-          "bg-[linear-gradient(90deg,transparent,hsl(var(--glass-bg)/0.9)_28px)] group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
+          "pointer-events-none absolute inset-y-1 right-1.5 flex translate-x-1 items-center rounded-full pl-6 opacity-0 transition-all duration-200 ease-out",
+          "bg-[linear-gradient(90deg,transparent,hsl(var(--glass-bg)/0.85)_28px)] group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-x-0 group-focus-within:opacity-100",
         )}
       >
         <QuickActions contact={contact} compact={compact} />

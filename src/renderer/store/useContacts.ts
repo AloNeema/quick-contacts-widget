@@ -8,6 +8,7 @@ interface ContactsState {
   settings: Settings;
   photosBaseUrl: string;
   version: string;
+  platform: string;
   toast: { id: number; message: string; tone: "info" | "error" } | null;
   hydrate: () => Promise<void>;
   setContacts: (contacts: Contact[]) => void;
@@ -25,10 +26,11 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
   settings: DEFAULT_SETTINGS,
   photosBaseUrl: "",
   version: "",
+  platform: "",
   toast: null,
   hydrate: async () => {
     const state = await window.contacts.getState();
-    set({ ready: true, contacts: state.contacts, settings: state.settings, photosBaseUrl: state.photosBaseUrl, version: state.version });
+    set({ ready: true, contacts: state.contacts, settings: state.settings, photosBaseUrl: state.photosBaseUrl, version: state.version, platform: state.platform });
     unsubscribe?.();
     unsubscribe = window.contacts.onStateChanged((next) => set({ contacts: next.contacts, settings: next.settings }));
   },

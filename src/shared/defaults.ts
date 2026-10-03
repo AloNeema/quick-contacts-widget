@@ -29,11 +29,11 @@ export const CUSTOM_DIALER_TEMPLATE: DialerProvider = {
 };
 
 export const DEFAULT_APPEARANCE: Appearance = {
-  opacity: 0.62,
-  blur: 24,
+  opacity: 0.38,
+  blur: 28,
   accentHue: 212,
   theme: "dark",
-  acrylic: false,
+  acrylic: true,
   density: "comfortable",
 };
 
