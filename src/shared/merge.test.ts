@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createContact, filterContacts, hueForName, initialsOf, mergeContacts, moveContact, normalizeOrder, recentContacts, recordContactUse } from "./merge";
+import { createContact, filterContacts, hueForName, initialsOf, mergeContacts, moveContact, normalizeOrder, recentContacts, recordContactUse, groupsOf, relativeTime } from "./merge";
 import type { Contact } from "./types";
 
 const NOW = "2026-10-02T00:00:00.000Z";
@@ -65,6 +65,28 @@ describe("recents", () => {
     expect(list.find((x) => x.id === a.id)?.contactCount).toBe(2);
     expect(recentContacts(list).map((x) => x.name)).toEqual(["A", "C"]);
     expect(recentContacts(list, 1).map((x) => x.name)).toEqual(["A"]);
+  });
+});
+
+describe("groups, notes and relative time", () => {
+  it("lists groups by size then name and filters by group", () => {
+    const list = [mk({ name: "A", group: "Lenders" }), mk({ name: "B", group: "Brokers" }, 1), mk({ name: "C", group: "Lenders" }, 2), mk({ name: "D" }, 3)];
+    expect(groupsOf(list)).toEqual(["Lenders", "Brokers"]);
+    expect(filterContacts(list, "", "Lenders").map((c) => c.name)).toEqual(["A", "C"]);
+    expect(filterContacts(list, "b", "Brokers").map((c) => c.name)).toEqual(["B"]);
+  });
+  it("keeps a personal note on re-import but adopts group changes", () => {
+    const c = mk({ name: "A", email: "a@x.com", notes: "Met at NAEB", group: "Lenders" });
+    const { contacts } = mergeContacts([c], [{ name: "A", email: "a@x.com", notes: "from sheet", group: "Brokers" }]);
+    expect(contacts[0]).toMatchObject({ notes: "Met at NAEB", group: "Brokers" });
+  });
+  it("formats relative time", () => {
+    const now = Date.parse("2026-10-03T12:00:00Z");
+    expect(relativeTime("2026-10-03T11:59:40Z", now)).toBe("just now");
+    expect(relativeTime("2026-10-03T11:15:00Z", now)).toBe("45m ago");
+    expect(relativeTime("2026-10-03T06:00:00Z", now)).toBe("6h ago");
+    expect(relativeTime("2026-09-30T12:00:00Z", now)).toBe("3d ago");
+    expect(relativeTime(undefined, now)).toBe("");
   });
 });
 

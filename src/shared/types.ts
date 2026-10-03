@@ -26,6 +26,10 @@ export interface Contact {
   /** Lower-cased. */
   email?: string;
   linkedinUrl?: string;
+  /** Free-form group such as "Lenders" or "Brokers"; drives the filter chips. */
+  group?: string;
+  /** One-line personal note. */
+  notes?: string;
   photo?: ContactPhoto;
   /** Microsoft Graph user id (organization directory) or contact id, set by M365 sync. */
   m365?: { kind: "user" | "contact"; id: string; syncedAt: string };
@@ -90,8 +94,20 @@ export interface M365SyncSummary {
   unmatched: number;
 }
 
+export interface UpdateStatus {
+  state: "idle" | "checking" | "available" | "downloading" | "ready" | "up-to-date" | "error" | "disabled";
+  currentVersion: string;
+  version?: string;
+  percent?: number;
+  error?: string;
+  checkedAt?: string;
+  hasToken: boolean;
+}
+
 export interface Settings {
   schemaVersion: 1;
+  /** Check GitHub Releases for new versions (packaged app only). */
+  autoUpdate: boolean;
   dialer: DialerProvider;
   /** Electron accelerator that shows the widget and focuses search, "" to disable. */
   hotkey: string;
@@ -118,6 +134,8 @@ export type ImportField =
   | "phone"
   | "linkedinUrl"
   | "photoUrl"
+  | "group"
+  | "notes"
   | "ignore";
 
 export interface IncomingContact {
@@ -128,6 +146,8 @@ export interface IncomingContact {
   email?: string;
   linkedinUrl?: string;
   photoUrl?: string;
+  group?: string;
+  notes?: string;
 }
 
 export interface ImportSheet {

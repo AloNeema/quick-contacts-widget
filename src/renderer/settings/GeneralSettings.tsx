@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Keyboard } from "lucide-react";
+import { Download, Keyboard, RefreshCw } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 import { Input } from "@renderer/components/ui/input";
 import { Label } from "@renderer/components/ui/label";
@@ -12,6 +12,8 @@ export function GeneralSettings() {
   const updateSettings = useContactsStore((s) => s.updateSettings);
   const contacts = useContactsStore((s) => s.contacts);
   const showToast = useContactsStore((s) => s.showToast);
+  const update = useContactsStore((s) => s.update);
+  const [token, setToken] = useState("");
   const [hotkey, setHotkey] = useState(settings.hotkey);
   const [recording, setRecording] = useState(false);
   useEffect(() => setHotkey(settings.hotkey), [settings.hotkey]);
@@ -79,6 +81,45 @@ export function GeneralSettings() {
           <Button variant="outline" size="sm" onClick={() => void saveHotkey(DEFAULT_HOTKEY)} disabled={hotkey === DEFAULT_HOTKEY}>Reset</Button>
           <Button variant="ghost" size="sm" onClick={() => void saveHotkey("")} disabled={!hotkey}>Disable</Button>
         </div>
+      </section>
+      <section className="space-y-3 rounded-xl border p-4">
+        <Toggle
+          label="Update automatically"
+          hint="Checks GitHub Releases every six hours, downloads in the background and installs when you quit."
+          checked={settings.autoUpdate}
+          onChange={(v) => void updateSettings({ autoUpdate: v })}
+        />
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>
+            v{update.currentVersion || settings.schemaVersion}
+            {update.state === "checking" && " · checking…"}
+            {update.state === "downloading" && ` · downloading ${update.version} (${update.percent ?? 0}%)`}
+            {update.state === "ready" && ` · ${update.version} ready to install`}
+            {update.state === "up-to-date" && " · up to date"}
+            {update.state === "error" && ` · ${update.error}`}
+            {update.state === "disabled" && ` · ${update.error}`}
+          </span>
+          <span className="flex-1" />
+          {update.state === "ready" ? (
+            <Button size="sm" onClick={() => void window.contacts.installUpdate()}><Download /> Restart to update</Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled={update.state === "checking" || update.state === "disabled"} onClick={() => void window.contacts.checkForUpdates()}>
+              <RefreshCw className={update.state === "checking" ? "animate-spin" : ""} /> Check now
+            </Button>
+          )}
+        </div>
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer select-none">Private repository token</summary>
+          <p className="mt-2">
+            The releases live in a private GitHub repository, so the updater needs a fine-grained personal access token with read-only <i>Contents</i> permission on it.
+            It is stored encrypted on this PC. {update.hasToken ? "A token is saved." : "No token saved yet."}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <Input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="github_pat_…" className="font-mono text-xs" />
+            <Button size="sm" variant="secondary" disabled={!token.trim()} onClick={() => void window.contacts.setUpdateToken(token).then(() => { setToken(""); showToast("Token saved"); })}>Save</Button>
+            {update.hasToken ? <Button size="sm" variant="ghost" onClick={() => void window.contacts.setUpdateToken("").then(() => showToast("Token removed"))}>Remove</Button> : null}
+          </div>
+        </details>
       </section>
       <section className="rounded-xl border p-4 text-sm">
         <p className="font-medium">Tips</p>

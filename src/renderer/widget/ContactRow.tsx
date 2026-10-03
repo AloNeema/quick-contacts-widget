@@ -1,4 +1,6 @@
-import { Pin } from "lucide-react";
+import { Pin, StickyNote } from "lucide-react";
+import { relativeTime } from "@shared/merge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
 import { CopyField } from "./CopyField";
 import type { Contact } from "@shared/types";
 import { formatPhoneForDisplay } from "@shared/phone";
@@ -22,6 +24,15 @@ export function ContactRow({ contact, photosBaseUrl, compact }: { contact: Conta
         <div className="flex items-center gap-1.5">
           <p className={cn("truncate font-medium leading-tight", compact ? "text-[13px]" : "text-sm")}>{contact.name}</p>
           {contact.pinned ? <Pin className="h-3 w-3 shrink-0 fill-current text-primary" aria-label="Pinned" /> : null}
+          {contact.notes ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex shrink-0 text-muted-foreground/70" aria-label="Has a note"><StickyNote className="h-3 w-3" /></span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] whitespace-pre-wrap">{contact.notes}</TooltipContent>
+            </Tooltip>
+          ) : null}
+          {contact.lastContactedAt ? <span className="ml-auto shrink-0 pl-2 text-[10px] tabular-nums text-muted-foreground/70 group-hover:opacity-0">{relativeTime(contact.lastContactedAt)}</span> : null}
         </div>
         <div className="relative h-4 text-xs leading-tight text-muted-foreground">
           {subtitle ? <p className="absolute inset-0 truncate transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0">{subtitle}</p> : null}

@@ -58,6 +58,7 @@ export function ContactsEditor() {
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-sm font-medium">{c.name}</p>
                   {c.pinned ? <Pin className="h-3 w-3 fill-current text-primary" /> : null}
+                  {c.group ? <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">{c.group}</span> : null}
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
                   {[c.title, c.company].filter(Boolean).join(" · ")}

@@ -54,6 +54,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dialer: DIALER_PRESETS.ringcentral,
   hotkey: DEFAULT_HOTKEY,
   m365: DEFAULT_M365,
+  autoUpdate: true,
   alwaysOnTop: false,
   launchAtLogin: false,
   appearance: DEFAULT_APPEARANCE,

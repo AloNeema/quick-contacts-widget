@@ -26,6 +26,15 @@ const api: ContactsApi = {
   m365SignOut: () => ipcRenderer.invoke(IPC.m365SignOut),
   m365Sync: () => ipcRenderer.invoke(IPC.m365Sync),
   getPresence: () => ipcRenderer.invoke(IPC.presenceGet),
+  updateStatus: () => ipcRenderer.invoke(IPC.updateStatus),
+  checkForUpdates: () => ipcRenderer.invoke(IPC.updateCheck),
+  installUpdate: () => ipcRenderer.invoke(IPC.updateInstall),
+  setUpdateToken: (token) => ipcRenderer.invoke(IPC.updateSetToken, token),
+  onUpdateStatusChanged: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
+    ipcRenderer.on(IPC.updateStatusChanged, listener);
+    return () => ipcRenderer.removeListener(IPC.updateStatusChanged, listener);
+  },
   onPresenceChanged: (cb) => {
     const listener = (_e: Electron.IpcRendererEvent, p: Parameters<typeof cb>[0]) => cb(p);
     ipcRenderer.on(IPC.presenceChanged, listener);

@@ -12,6 +12,7 @@ import { useContactsStore } from "@renderer/store/useContacts";
 
 export function ContactForm({ contact, onClose }: { contact: Contact | null; onClose: () => void }) {
   const contacts = useContactsStore((s) => s.contacts);
+  const groups = Array.from(new Set(contacts.map((c) => c.group?.trim()).filter((g): g is string => Boolean(g)))).sort();
   const photosBaseUrl = useContactsStore((s) => s.photosBaseUrl);
   const setContacts = useContactsStore((s) => s.setContacts);
   const showToast = useContactsStore((s) => s.showToast);
@@ -82,6 +83,8 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
       title: draft.title?.trim() || undefined,
       company: draft.company?.trim() || undefined,
       linkedinUrl: draft.linkedinUrl?.trim() || undefined,
+      group: draft.group?.trim() || undefined,
+      notes: draft.notes?.trim() || undefined,
       phone: phone || undefined,
       email: email || undefined,
       hue: contact ? draft.hue : hueForName(name),
@@ -142,6 +145,13 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
             </Field>
             <Field label="Email">
               <Input value={draft.email ?? ""} onChange={(e) => set("email", e.target.value)} placeholder="jane@acme.com" inputMode="email" />
+            </Field>
+            <Field label="Group / tag">
+              <Input list="contact-groups" value={draft.group ?? ""} onChange={(e) => set("group", e.target.value)} placeholder="Lenders, Brokers, Internal…" />
+              <datalist id="contact-groups">{groups.map((g) => <option key={g} value={g} />)}</datalist>
+            </Field>
+            <Field label="Notes">
+              <Input value={draft.notes ?? ""} onChange={(e) => set("notes", e.target.value)} placeholder="Prefers texts after 3pm" />
             </Field>
             <Field label="LinkedIn profile URL" className="col-span-2">
               <Input value={draft.linkedinUrl ?? ""} onChange={(e) => set("linkedinUrl", e.target.value)} placeholder="https://www.linkedin.com/in/…" />

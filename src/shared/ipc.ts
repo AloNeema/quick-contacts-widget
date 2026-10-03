@@ -1,4 +1,4 @@
-import type { Contact, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, Settings } from "./types";
+import type { Contact, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, Settings, UpdateStatus } from "./types";
 
 export const IPC = {
   stateGet: "state:get",
@@ -25,11 +25,16 @@ export const IPC = {
   m365SignOut: "m365:sign-out",
   m365Sync: "m365:sync",
   presenceGet: "presence:get",
+  updateStatus: "update:status",
+  updateCheck: "update:check",
+  updateInstall: "update:install",
+  updateSetToken: "update:set-token",
   // main -> renderer
   stateChanged: "state:changed",
   presenceChanged: "presence:changed",
   focusSearch: "widget:focus-search",
   m365StatusChanged: "m365:status-changed",
+  updateStatusChanged: "update:status-changed",
 } as const;
 
 export interface DialRequest {
@@ -65,6 +70,11 @@ export interface ContactsApi {
   m365SignOut(): Promise<M365Status>;
   m365Sync(): Promise<{ summary: M365SyncSummary; status: M365Status }>;
   getPresence(): Promise<PresenceMap>;
+  updateStatus(): Promise<UpdateStatus>;
+  checkForUpdates(): Promise<UpdateStatus>;
+  installUpdate(): Promise<void>;
+  setUpdateToken(token: string): Promise<UpdateStatus>;
+  onUpdateStatusChanged(cb: (status: UpdateStatus) => void): () => void;
   onStateChanged(cb: (state: { settings: Settings; contacts: Contact[] }) => void): () => void;
   onPresenceChanged(cb: (presence: PresenceMap) => void): () => void;
   onFocusSearch(cb: () => void): () => void;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pin, PinOff, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
-import { filterContacts, recentContacts } from "@shared/merge";
+import { filterContacts, groupsOf, recentContacts } from "@shared/merge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
 import { cn } from "@renderer/lib/utils";
 import { useContactsStore } from "@renderer/store/useContacts";
@@ -35,6 +35,7 @@ export function WidgetPanel() {
   const photosBaseUrl = useContactsStore((s) => s.photosBaseUrl);
   const toast = useContactsStore((s) => s.toast);
   const [query, setQuery] = useState("");
+  const [group, setGroup] = useState<string | undefined>(undefined);
   const searchRef = useRef<HTMLInputElement>(null);
   const showToast = useContactsStore((s) => s.showToast);
 
@@ -49,7 +50,9 @@ export function WidgetPanel() {
   const compact = settings.appearance.density === "compact";
   const acrylic = settings.appearance.acrylic && useContactsStore.getState().platform === "win32";
 
-  const visible = useMemo(() => filterContacts(contacts, query), [contacts, query]);
+  const groups = useMemo(() => groupsOf(contacts), [contacts]);
+  const activeGroup = group && groups.includes(group) ? group : undefined;
+  const visible = useMemo(() => filterContacts(contacts, query, activeGroup), [contacts, query, activeGroup]);
   const pinnedCount = visible.filter((c) => c.pinned).length;
   const recents = useMemo(() => recentContacts(contacts, 6), [contacts]);
 
@@ -99,14 +102,31 @@ export function WidgetPanel() {
           </div>
         </div>
 
-        {recents.length > 0 && !query ? <RecentsStrip contacts={recents} photosBaseUrl={photosBaseUrl} /> : null}
+        {groups.length > 0 ? (
+          <div className="no-drag relative z-10 flex gap-1.5 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {[undefined, ...groups].map((g) => (
+              <button
+                key={g ?? "__all"}
+                type="button"
+                onClick={() => setGroup(g)}
+                className={cn(
+                  "chip shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  activeGroup === g ? "chip-active" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {g ?? "All"}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {recents.length > 0 && !query && !activeGroup ? <RecentsStrip contacts={recents} photosBaseUrl={photosBaseUrl} /> : null}
 
         {/* List */}
         <div className="relative z-10 min-h-0 flex-1 overflow-y-auto px-1.5 pb-3">
           {contacts.length === 0 ? (
             <EmptyState />
           ) : visible.length === 0 ? (
-            <p className="px-3 py-8 text-center text-xs text-muted-foreground">No matches for “{query}”.</p>
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">{query ? <>No matches for “{query}”.</> : <>Nobody in {activeGroup}.</>}</p>
           ) : (
             <ul className="space-y-0.5">
               {visible.map((c, i) => (

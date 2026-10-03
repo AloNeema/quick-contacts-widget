@@ -8,6 +8,7 @@ import { registerIpc } from "./ipc";
 import { applyLaunchAtLogin } from "./autoLaunch";
 import { applyHotkey, releaseHotkey } from "./hotkey";
 import { initM365 } from "./m365";
+import { initUpdater } from "./updater";
 import { broadcast } from "./windows";
 import { IPC } from "@shared/ipc";
 
@@ -34,6 +35,7 @@ if (!gotLock) {
     applyLaunchAtLogin(state.settings.launchAtLogin);
     createWidgetWindow({ startHidden: process.argv.includes("--hidden") });
     if (!applyHotkey(state.settings.hotkey)) console.warn("hotkey not registered:", state.settings.hotkey);
+    initUpdater((s) => broadcast(IPC.updateStatusChanged, s));
     initM365({
       onStatus: (s) => broadcast(IPC.m365StatusChanged, s),
       onPresence: (p) => broadcast(IPC.presenceChanged, p),

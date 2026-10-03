@@ -25,4 +25,8 @@ nsis:
   shortcutName: QCF Contacts
 portable:
   artifactName: "${productName}-${version}-portable.${ext}"
-publish: null
+publish:
+  provider: github
+  owner: AloNeema
+  repo: qcfofferoutline
+  releaseType: draft

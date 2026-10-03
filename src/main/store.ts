@@ -21,6 +21,8 @@ export const contactSchema = z.object({
   phone: z.string().optional(),
   email: z.string().optional(),
   linkedinUrl: z.string().optional(),
+  group: z.string().max(60).optional(),
+  notes: z.string().max(2000).optional(),
   m365: z.object({ kind: z.enum(["user", "contact"]), id: z.string(), syncedAt: z.string() }).optional(),
   photo: z
     .union([
@@ -41,6 +43,7 @@ export const settingsSchema = z.object({
   schemaVersion: z.literal(1),
   dialer: dialerSchema,
   hotkey: z.string().max(80).default(DEFAULT_SETTINGS.hotkey),
+  autoUpdate: z.boolean().default(true),
   m365: z
     .object({
       clientId: z.string().max(200),

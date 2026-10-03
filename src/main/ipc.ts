@@ -19,6 +19,7 @@ import {
 import { refreshTrayMenu } from "./tray";
 import { applyHotkey } from "./hotkey";
 import { getPresence, refreshStatus, schedulePresence, signIn, signOut, syncContacts } from "./m365";
+import { checkForUpdates, getUpdateStatus, installUpdate, rescheduleUpdates, setUpdateToken } from "./updater";
 
 const incomingSchema = z.object({
   name: z.string().min(1),
@@ -28,6 +29,8 @@ const incomingSchema = z.object({
   email: z.string().optional(),
   linkedinUrl: z.string().optional(),
   photoUrl: z.string().optional(),
+  group: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -107,6 +110,7 @@ export function registerIpc(): void {
         throw new Error(`"${next.hotkey}" could not be registered. Another app may be using it.`);
       }
     }
+    if (patch.autoUpdate !== undefined) rescheduleUpdates();
     if (patch.m365) {
       await refreshStatus();
       schedulePresence();
@@ -207,6 +211,10 @@ export function registerIpc(): void {
     return r;
   });
   ipcMain.handle(IPC.presenceGet, () => getPresence());
+  ipcMain.handle(IPC.updateStatus, () => getUpdateStatus());
+  ipcMain.handle(IPC.updateCheck, () => checkForUpdates(true));
+  ipcMain.handle(IPC.updateInstall, () => installUpdate());
+  ipcMain.handle(IPC.updateSetToken, (_e, raw: unknown) => setUpdateToken(z.string().max(200).parse(raw)));
   ipcMain.handle(IPC.windowToggleAlwaysOnTop, async () => {
     const next = !getState().settings.alwaysOnTop;
     await patchSettings({ alwaysOnTop: next });

@@ -29,6 +29,8 @@ export function createContact(input: IncomingContact, order: number, now = new D
     phone: input.phone,
     email: input.email,
     linkedinUrl: input.linkedinUrl,
+    group: input.group,
+    notes: input.notes,
     photo: input.photoUrl ? { kind: "url", url: input.photoUrl } : undefined,
     hue: hueForName(input.name),
     pinned: false,
@@ -83,6 +85,8 @@ export function mergeContacts(
       set("title", inc.title);
       set("company", inc.company);
       set("linkedinUrl", inc.linkedinUrl);
+      set("group", inc.group);
+      if (inc.notes && !match.notes) set("notes", inc.notes); // never overwrite a personal note
       if (inc.email && !match.email) set("email", inc.email);
       if (inc.phone && !match.phone) set("phone", inc.phone);
       if (!match.photo && inc.photoUrl) {
@@ -142,12 +146,34 @@ export function recordContactUse(contacts: Contact[], id: string, now = new Date
   return contacts.map((c) => (c.id === id ? { ...c, lastContactedAt: now, contactCount: (c.contactCount ?? 0) + 1 } : c));
 }
 
-export function filterContacts(contacts: Contact[], query: string): Contact[] {
+export function groupsOf(contacts: Contact[]): string[] {
+  const counts = new Map<string, number>();
+  for (const c of contacts) if (c.group?.trim()) counts.set(c.group.trim(), (counts.get(c.group.trim()) ?? 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([g]) => g);
+}
+
+/** "2h ago", "3d ago", "just now". */
+export function relativeTime(iso: string | undefined, now = Date.now()): string {
+  if (!iso) return "";
+  const diff = Math.max(0, now - new Date(iso).getTime());
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  const mo = Math.floor(d / 30);
+  return mo < 12 ? `${mo}mo ago` : `${Math.floor(mo / 12)}y ago`;
+}
+
+export function filterContacts(contacts: Contact[], query: string, group?: string): Contact[] {
   const q = query.trim().toLowerCase();
-  if (!q) return normalizeOrder(contacts);
+  const scoped = group ? contacts.filter((c) => c.group?.trim() === group) : contacts;
+  if (!q) return normalizeOrder(scoped);
   const digits = q.replace(/\D/g, "");
-  return normalizeOrder(contacts).filter((c) =>
-    [c.name, c.title, c.company, c.email].some((v) => v?.toLowerCase().includes(q)) ||
+  return normalizeOrder(scoped).filter((c) =>
+    [c.name, c.title, c.company, c.email, c.group, c.notes].some((v) => v?.toLowerCase().includes(q)) ||
     (digits.length >= 3 && c.phone?.includes(digits)),
   );
 }

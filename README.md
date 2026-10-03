@@ -11,7 +11,13 @@ A transparent, frameless Windows widget that floats on your desktop with your ke
 - **Call & Text providers**: RingCentral app (`rcapp://` links), Windows Phone Link (`tel:` / `sms:`), the Windows default app, or your own link templates.
 - **Import**: pick an `.xlsx`, `.xls` or `.csv`; the column mapping is guessed from headers (Name, Title, Company, Email, Phone, LinkedIn, Photo URL) and can be corrected before importing. Re-imports match on email, then phone, and keep photos, pins and order. Rows missing both phone and email are skipped.
 - **Photos**: drop an image on a contact, pick a file, or paste an image URL. Otherwise a coloured initials avatar is shown. LinkedIn does not allow fetching other people's photos, so for a LinkedIn picture right-click it in the browser, *Copy image address*, and paste the URL (or save it and drop the file).
-- **Appearance**: dark/light, accent colour, opacity, blur, density, and an experimental Windows 11 acrylic mode.
+- **Appearance**: liquid-glass panel with Windows 11 acrylic blur (on by default), dark/light, accent colour, opacity, blur and density.
+- **Microsoft 365**: sign in once with your own Azure app registration; sync pulls photos, titles and companies for anyone with a work email from the company directory and your Outlook contacts, and shows Teams presence dots. Never overwrites a photo you set yourself.
+- **Summon hotkey**: `Ctrl+Shift+C` (configurable) pops the widget up with search focused. Type a name, `Enter` calls the top match, `Alt+Enter` texts, `Shift+Enter` emails, `Esc` hides.
+- **Recent strip**: the six people you most recently called, texted or emailed, one click away above the list.
+- **Groups and notes**: a Group column (Lenders, Brokers, Internal…) becomes filter chips; a Notes column or the edit form adds a one-line note shown on hover. Rows also show when you last contacted someone.
+- **Click to copy**: hover a row and click the phone or email to copy it.
+- **Auto-update**: checks GitHub Releases, downloads in the background and installs on quit.
 
 ## Run it on your Windows PC
 
@@ -44,20 +50,33 @@ The widget's data (`state.json` and the `photos/` folder) is in `%APPDATA%\QCF C
 
 Email always uses `mailto:` and opens your default mail app (Outlook).
 
+## Microsoft 365 setup (one time)
+
+1. In the Azure portal open **Microsoft Entra ID › App registrations › New registration**. Name it "QCF Contacts", pick *Accounts in this organizational directory only*, and register.
+2. **Authentication › Add a platform › Mobile and desktop applications**, tick `http://localhost`, and set *Allow public client flows* to **Yes**.
+3. Copy the **Application (client) ID** into Settings › Microsoft 365, save, then **Sign in with Microsoft**. The delegated permissions (User.Read, User.ReadBasic.All, Contacts.Read, People.Read, Presence.Read.All) are consented at sign-in; none need an admin.
+4. Click **Sync now**. Re-run it whenever people change roles; presence refreshes on its own every 45 seconds while the widget is signed in.
+
+Tokens are cached in `%APPDATA%\QCF Contacts\m365-token-cache.bin`, encrypted with Windows DPAPI.
+
+## Releasing an update
+
+Bump `version` in `package.json`, merge, then run the **Contacts widget release** workflow from the Actions tab. It builds on Windows and uploads the installer, portable exe and `latest.yml` to a **draft** release tagged `v<version>`; publish the draft and installed widgets pick it up within six hours (or via *Check now*). Because the repository is private, each PC needs a fine-grained personal access token with read-only *Contents* permission pasted once under Settings › General › Private repository token; it is stored encrypted on that PC.
+
 ## Spreadsheet format
 
-Any sheet with a header row works. Recognised header words (case-insensitive): *name / full name / contact*, *first*, *last*, *title / position / role*, *company / business / account / lender*, *email*, *phone / mobile / cell / direct*, *linkedin*, *photo / headshot / avatar*. Phone numbers are stored as US E.164 (`+1XXXXXXXXXX`). A row needs a name plus an email or phone.
+Any sheet with a header row works. Recognised header words (case-insensitive): *name / full name / contact*, *first*, *last*, *title / position / role*, *company / business / account / lender*, *email*, *phone / mobile / cell / direct*, *group / tag / category*, *notes / comments*, *linkedin*, *photo / headshot / avatar*. Phone numbers are stored as US E.164 (`+1XXXXXXXXXX`). A row needs a name plus an email or phone.
 
 ## Development
 
 ```
 npm run typecheck   # main + renderer
-npm test            # vitest: import mapping, merge rules, dial URI building
+npm test            # vitest: import mapping, merge rules, groups, recents, dial URI building
 npm run lint
 npm run build       # electron-vite bundles into out/
 ```
 
-Layout: `src/main` (Electron main: windows, tray, JSON store, photos, spreadsheet reading, IPC), `src/preload` (typed `window.contacts` bridge), `src/renderer` (React UI: `widget/` and `settings/`), `src/shared` (data model and pure logic used by both sides, with tests). Icons are generated by `node scripts/make-icons.mjs`.
+Layout: `src/main` (Electron main: windows, tray, JSON store, photos, spreadsheet reading, Microsoft 365 sync, hotkey, updater, IPC), `src/preload` (typed `window.contacts` bridge), `src/renderer` (React UI: `widget/` and `settings/`), `src/shared` (data model and pure logic used by both sides, with tests). Icons are generated by `node scripts/make-icons.mjs`.
 
 Security posture: context isolation on, node integration off, a CSP in `index.html`, every IPC payload validated with zod in the main process, and `shell.openExternal` limited to `tel:`, `sms:`, `mailto:`, `rcapp:`, `msteams:`, `callto:`, `sip:`, `https://linkedin.com` and the scheme of a custom template.
 
