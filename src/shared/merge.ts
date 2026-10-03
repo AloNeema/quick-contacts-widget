@@ -130,6 +130,18 @@ export function moveContact(contacts: Contact[], id: string, direction: -1 | 1):
   return sorted.map((c, k) => ({ ...c, order: k }));
 }
 
+/** People contacted most recently, newest first, for the quick strip. */
+export function recentContacts(contacts: Contact[], limit = 6): Contact[] {
+  return contacts
+    .filter((c) => c.lastContactedAt)
+    .sort((a, b) => (b.lastContactedAt! > a.lastContactedAt! ? 1 : b.lastContactedAt! < a.lastContactedAt! ? -1 : (b.contactCount ?? 0) - (a.contactCount ?? 0)))
+    .slice(0, limit);
+}
+
+export function recordContactUse(contacts: Contact[], id: string, now = new Date().toISOString()): Contact[] {
+  return contacts.map((c) => (c.id === id ? { ...c, lastContactedAt: now, contactCount: (c.contactCount ?? 0) + 1 } : c));
+}
+
 export function filterContacts(contacts: Contact[], query: string): Contact[] {
   const q = query.trim().toLowerCase();
   if (!q) return normalizeOrder(contacts);

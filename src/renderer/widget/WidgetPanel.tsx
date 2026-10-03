@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pin, PinOff, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
-import { filterContacts } from "@shared/merge";
+import { filterContacts, recentContacts } from "@shared/merge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
 import { cn } from "@renderer/lib/utils";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { ContactRow } from "./ContactRow";
+import { RecentsStrip } from "./RecentsStrip";
 import { ResizeGrip } from "./ResizeGrip";
 
 function HeaderButton({ label, onClick, active, children }: { label: string; onClick: () => void; active?: boolean; children: React.ReactNode }) {
@@ -50,6 +51,7 @@ export function WidgetPanel() {
 
   const visible = useMemo(() => filterContacts(contacts, query), [contacts, query]);
   const pinnedCount = visible.filter((c) => c.pinned).length;
+  const recents = useMemo(() => recentContacts(contacts, 6), [contacts]);
 
   return (
     <div className={cn("h-full w-full", acrylic ? "p-0" : "p-2")}>
@@ -86,9 +88,9 @@ export function WidgetPanel() {
                   else void window.contacts.hideWidget();
                 } else if (e.key === "Enter" && query && visible[0]) {
                   const c = visible[0];
-                  if (e.shiftKey && c.email) void window.contacts.email(c.email).then((r) => !r.ok && showToast(r.error, "error"));
-                  else if (c.phone) void window.contacts.dial({ action: e.altKey ? "sms" : "call", phone: c.phone }).then((r) => !r.ok && showToast(r.error, "error"));
-                  else if (c.email) void window.contacts.email(c.email).then((r) => !r.ok && showToast(r.error, "error"));
+                  if (e.shiftKey && c.email) void window.contacts.email(c.email, c.id).then((r) => !r.ok && showToast(r.error, "error"));
+                  else if (c.phone) void window.contacts.dial({ action: e.altKey ? "sms" : "call", phone: c.phone, contactId: c.id }).then((r) => !r.ok && showToast(r.error, "error"));
+                  else if (c.email) void window.contacts.email(c.email, c.id).then((r) => !r.ok && showToast(r.error, "error"));
                 }
               }}
               placeholder="Search name, company, number…"
@@ -96,6 +98,8 @@ export function WidgetPanel() {
             />
           </div>
         </div>
+
+        {recents.length > 0 && !query ? <RecentsStrip contacts={recents} photosBaseUrl={photosBaseUrl} /> : null}
 
         {/* List */}
         <div className="relative z-10 min-h-0 flex-1 overflow-y-auto px-1.5 pb-3">

@@ -31,6 +31,8 @@ export const contactSchema = z.object({
   hue: z.number().min(0).max(359),
   pinned: z.boolean(),
   order: z.number(),
+  lastContactedAt: z.string().optional(),
+  contactCount: z.number().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

@@ -33,6 +33,9 @@ export interface Contact {
   hue: number;
   pinned: boolean;
   order: number;
+  /** Set whenever a Call / Text / Email action is used for this person. */
+  lastContactedAt?: string;
+  contactCount?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -27,13 +27,13 @@ export function QuickActions({ contact, compact }: { contact: Contact; compact?:
 
   return (
     <div className={compact ? "flex items-center gap-1 [&_.action-btn]:h-7 [&_.action-btn]:w-7" : "flex items-center gap-1.5"}>
-      <Action label={contact.phone ? `Call ${contact.name.split(" ")[0]}` : "No phone"} disabled={!contact.phone} onClick={() => void run(window.contacts.dial({ action: "call", phone: contact.phone! }))}>
+      <Action label={contact.phone ? `Call ${contact.name.split(" ")[0]}` : "No phone"} disabled={!contact.phone} onClick={() => void run(window.contacts.dial({ action: "call", phone: contact.phone!, contactId: contact.id }))}>
         <Phone className={iconClass} />
       </Action>
-      <Action label={contact.phone ? "Text" : "No phone"} disabled={!contact.phone} onClick={() => void run(window.contacts.dial({ action: "sms", phone: contact.phone! }))}>
+      <Action label={contact.phone ? "Text" : "No phone"} disabled={!contact.phone} onClick={() => void run(window.contacts.dial({ action: "sms", phone: contact.phone!, contactId: contact.id }))}>
         <MessageSquare className={iconClass} />
       </Action>
-      <Action label={contact.email ? `Email ${contact.email}` : "No email"} disabled={!contact.email} onClick={() => void run(window.contacts.email(contact.email!))}>
+      <Action label={contact.email ? `Email ${contact.email}` : "No email"} disabled={!contact.email} onClick={() => void run(window.contacts.email(contact.email!, contact.id))}>
         <Mail className={iconClass} />
       </Action>
       {contact.linkedinUrl ? (

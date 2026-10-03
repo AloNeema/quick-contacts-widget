@@ -35,6 +35,8 @@ export const IPC = {
 export interface DialRequest {
   action: DialAction;
   phone: string;
+  /** When set, the contact's last-contacted stamp is updated on success. */
+  contactId?: string;
 }
 
 /** API exposed on window.contacts by the preload script. */
@@ -51,7 +53,7 @@ export interface ContactsApi {
   pickImportFile(): Promise<ImportFile | null>;
   applyImport(incoming: IncomingContact[], options: MergeOptions): Promise<{ contacts: Contact[]; summary: MergeSummary }>;
   dial(req: DialRequest): Promise<{ ok: true } | { ok: false; error: string }>;
-  email(address: string): Promise<{ ok: true } | { ok: false; error: string }>;
+  email(address: string, contactId?: string): Promise<{ ok: true } | { ok: false; error: string }>;
   openLink(url: string): Promise<{ ok: true } | { ok: false; error: string }>;
   resizeBy(dx: number, dy: number): Promise<void>;
   hideWidget(): Promise<void>;

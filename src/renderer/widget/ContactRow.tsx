@@ -1,4 +1,5 @@
 import { Pin } from "lucide-react";
+import { CopyField } from "./CopyField";
 import type { Contact } from "@shared/types";
 import { formatPhoneForDisplay } from "@shared/phone";
 import { cn } from "@renderer/lib/utils";
@@ -22,7 +23,14 @@ export function ContactRow({ contact, photosBaseUrl, compact }: { contact: Conta
           <p className={cn("truncate font-medium leading-tight", compact ? "text-[13px]" : "text-sm")}>{contact.name}</p>
           {contact.pinned ? <Pin className="h-3 w-3 shrink-0 fill-current text-primary" aria-label="Pinned" /> : null}
         </div>
-        {subtitle ? <p className="truncate text-xs leading-tight text-muted-foreground">{subtitle}</p> : null}
+        <div className="relative h-4 text-xs leading-tight text-muted-foreground">
+          {subtitle ? <p className="absolute inset-0 truncate transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0">{subtitle}</p> : null}
+          <p className="absolute inset-0 flex items-center gap-2 truncate opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+            {contact.phone ? <CopyField value={contact.phone} label={formatPhoneForDisplay(contact.phone)} /> : null}
+            {contact.email ? <CopyField value={contact.email} label={contact.email} /> : null}
+            {!contact.phone && !contact.email ? <span>No phone or email</span> : null}
+          </p>
+        </div>
       </div>
       {/* Actions float over the right edge on hover so names keep the full row width otherwise. */}
       <div

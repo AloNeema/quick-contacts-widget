@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createContact, filterContacts, hueForName, initialsOf, mergeContacts, moveContact, normalizeOrder } from "./merge";
+import { createContact, filterContacts, hueForName, initialsOf, mergeContacts, moveContact, normalizeOrder, recentContacts, recordContactUse } from "./merge";
 import type { Contact } from "./types";
 
 const NOW = "2026-10-02T00:00:00.000Z";
@@ -51,6 +51,20 @@ describe("mergeContacts", () => {
     const r = mergeContacts([a, b], [{ name: "A", email: "a@x.com" }], { removeMissing: true });
     expect(r.contacts.map((c) => c.name)).toEqual(["A"]);
     expect(r.summary.removed).toBe(1);
+  });
+});
+
+describe("recents", () => {
+  it("records use and lists newest first with a limit", () => {
+    const a = mk({ name: "A" }, 0);
+    const b = mk({ name: "B" }, 1);
+    const c = mk({ name: "C" }, 2);
+    let list = recordContactUse([a, b, c], a.id, "2026-10-01T00:00:00.000Z");
+    list = recordContactUse(list, c.id, "2026-10-02T00:00:00.000Z");
+    list = recordContactUse(list, a.id, "2026-10-03T00:00:00.000Z");
+    expect(list.find((x) => x.id === a.id)?.contactCount).toBe(2);
+    expect(recentContacts(list).map((x) => x.name)).toEqual(["A", "C"]);
+    expect(recentContacts(list, 1).map((x) => x.name)).toEqual(["A"]);
   });
 });
 
