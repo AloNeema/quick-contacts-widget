@@ -22,6 +22,14 @@ A transparent, frameless Windows widget that floats on your desktop with your ke
 - **Salesforce**: connect your own Connected App; sync links contacts by email to Salesforce Contacts or Leads and shows the top open opportunity's stage and amount under the name, with the full list and record links in the drawer.
 - **Dock mode**: collapse to a slim strip of avatars on the left or right screen edge; it expands when you hover and shrinks back when you leave.
 
+## macOS (Apple Silicon and Intel)
+
+The same app builds for macOS: the CI workflow produces a `.dmg` and `.zip` for `arm64` (M-series) and `x64`. It runs as a menu-bar app (no Dock icon), uses macOS vibrancy for the glass, `⌘⇧C` as the summon hotkey, and the *FaceTime & Messages* dialer preset (`tel:` / `sms:`); RingCentral's Mac app understands the same `rcapp://` links.
+
+Builds are unsigned unless you add an Apple Developer certificate (`CSC_LINK` / `CSC_KEY_PASSWORD`, plus `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` for notarization) to the workflow secrets. An unsigned app opens with **right-click › Open** the first time, and macOS auto-update requires a signed build, so until then Mac users update by downloading the new dmg.
+
+To build locally on a Mac: `npm install`, `npm run dev`, or `npx electron-vite build && npx electron-builder --mac`.
+
 ## Run it on your Windows PC
 
 Prerequisites: [Node.js 22](https://nodejs.org) (the installer includes npm). No Rust, no Visual Studio.

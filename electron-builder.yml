@@ -8,6 +8,23 @@ files:
   - out/**
   - package.json
 asar: true
+mac:
+  icon: resources/icon.png
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+  # Unsigned by default; set CSC_LINK / CSC_KEY_PASSWORD and APPLE_* for signing + notarization.
+  identity: null
+  hardenedRuntime: false
+  extendInfo:
+    LSUIElement: true
+    NSUserNotificationAlertStyle: alert
+dmg:
+  sign: false
 win:
   icon: resources/icon.ico
   target:

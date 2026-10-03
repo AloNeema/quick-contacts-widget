@@ -27,6 +27,7 @@ if (!gotLock) {
 
   app.whenReady().then(async () => {
     electronApp.setAppUserModelId("com.quickcapitalfunding.contactswidget");
+    if (process.platform === "darwin") app.dock?.hide();
     app.on("browser-window-created", (_, window) => optimizer.watchWindowShortcuts(window));
 
     const state = await loadState();

@@ -75,7 +75,7 @@ export function WidgetPanel() {
     [],
   );
   const compact = settings.appearance.density === "compact";
-  const acrylic = settings.appearance.acrylic && useContactsStore.getState().platform === "win32";
+  const acrylic = settings.appearance.acrylic && ["win32", "darwin"].includes(useContactsStore.getState().platform);
 
   const groups = useMemo(() => groupsOf(contacts), [contacts]);
   const activeGroup = group && groups.includes(group) ? group : undefined;

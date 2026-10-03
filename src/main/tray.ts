@@ -7,13 +7,16 @@ import { IPC } from "@shared/ipc";
 let tray: Tray | null = null;
 
 function trayIcon(): Electron.NativeImage {
-  const candidates = [
-    path.join(process.resourcesPath ?? "", "tray.png"),
-    path.join(__dirname, "../../resources/tray.png"),
-  ];
+  // macOS menu bar wants a monochrome "template" image that adapts to light/dark menu bars.
+  const file = process.platform === "darwin" ? "trayTemplate.png" : "tray.png";
+  const candidates = [path.join(process.resourcesPath ?? "", file), path.join(__dirname, "../../resources", file)];
   for (const p of candidates) {
     const img = nativeImage.createFromPath(p);
-    if (!img.isEmpty()) return img.resize({ width: 16, height: 16 });
+    if (!img.isEmpty()) {
+      const sized = img.resize({ width: 16, height: 16 });
+      if (process.platform === "darwin") sized.setTemplateImage(true);
+      return sized;
+    }
   }
   return nativeImage.createEmpty();
 }

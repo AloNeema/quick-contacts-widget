@@ -98,6 +98,10 @@ export function createWidgetWindow(opts: { startHidden?: boolean } = {}): Browse
     alwaysOnTop: settings.alwaysOnTop || settings.dock.enabled,
     title: "QCF Contacts",
     ...(settings.appearance.acrylic && process.platform === "win32" ? { backgroundMaterial: "acrylic" as const } : {}),
+    ...(settings.appearance.acrylic && process.platform === "darwin"
+      ? { vibrancy: (settings.appearance.theme === "light" ? "popover" : "hud") as "popover" | "hud", visualEffectState: "active" as const }
+      : {}),
+    ...(process.platform === "darwin" ? { titleBarStyle: "customButtonsOnHover" as const } : {}),
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       contextIsolation: true,

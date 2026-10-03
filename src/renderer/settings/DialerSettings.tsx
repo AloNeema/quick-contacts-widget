@@ -16,7 +16,15 @@ const OPTIONS: { id: DialerProviderId; title: string; body: string }[] = [
   { id: "custom", title: "Custom", body: "Your own link templates, for a softphone that isn't listed." },
 ];
 
+const MAC_OPTIONS: typeof OPTIONS = [
+  OPTIONS[0],
+  { id: "system", title: "FaceTime & Messages", body: "Call opens FaceTime (which can dial through your iPhone), Text opens Messages. Uses the standard tel: and sms: links." },
+  OPTIONS[3],
+];
+
 export function DialerSettings() {
+  const platform = useContactsStore((s) => s.platform);
+  const options = platform === "darwin" ? MAC_OPTIONS : OPTIONS;
   const dialer = useContactsStore((s) => s.settings.dialer);
   const updateSettings = useContactsStore((s) => s.updateSettings);
   const showToast = useContactsStore((s) => s.showToast);
@@ -55,7 +63,7 @@ export function DialerSettings() {
   return (
     <div className="space-y-6 pt-2">
       <section className="grid gap-3 md:grid-cols-2">
-        {OPTIONS.map((o) => (
+        {options.map((o) => (
           <button
             key={o.id}
             type="button"

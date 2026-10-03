@@ -91,7 +91,19 @@ function trayPixel(x, y, size) {
 }
 
 const png256 = encodePng(256, pixel);
-writeFileSync(join(out, "icon.png"), png256);
+// macOS/.icns needs at least 512px; Windows .ico tops out at 256.
+writeFileSync(join(out, "icon.png"), encodePng(512, pixel));
+writeFileSync(join(out, "icon-256.png"), png256);
+// Template image for the macOS menu bar: black silhouette, alpha only.
+writeFileSync(
+  join(out, "trayTemplate.png"),
+  encodePng(32, (x, y, s) => {
+    const aa = 1;
+    const head = coverage(Math.hypot(x - s / 2, y - s * 0.36) - s * 0.17, aa);
+    const body = coverage(sdRoundRect(x, y, s / 2, s * 0.9, s * 0.3, s * 0.24, s * 0.22), aa) * coverage(sdRoundRect(x, y, s / 2, s / 2, s * 0.5, s * 0.5, 0), aa);
+    return [0, 0, 0, Math.round(clamp01(head + body) * 255)];
+  }),
+);
 writeFileSync(join(out, "tray.png"), encodePng(32, trayPixel));
 
 // ICO: header + one directory entry pointing at the PNG payload

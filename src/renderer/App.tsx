@@ -21,7 +21,7 @@ export default function App() {
   const ready = useContactsStore((s) => s.ready);
   const platform = useContactsStore((s) => s.platform);
   // Acrylic is a Windows 11 material; elsewhere the CSS glass does the work.
-  const acrylic = appearance.acrylic && platform === "win32";
+  const acrylic = appearance.acrylic && (platform === "win32" || platform === "darwin");
 
   useEffect(() => {
     void hydrate();

@@ -79,7 +79,7 @@ export function AppearanceSettings() {
           </div>
         </div>
       </Row>
-      <Row label="Windows 11 acrylic" hint="Lets Windows blur the real desktop behind the panel (Windows 11). Turn off if the panel renders black on your graphics driver; the widget then uses its own glass effect.">
+      <Row label="System blur" hint="Lets the OS blur the real desktop behind the panel (Windows 11 acrylic, macOS vibrancy). Turn off if the panel renders black on your graphics driver; the widget then uses its own glass effect.">
         <Switch checked={appearance.acrylic} onCheckedChange={(v) => set({ acrylic: v })} />
       </Row>
     </div>

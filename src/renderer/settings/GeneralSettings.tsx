@@ -13,6 +13,8 @@ export function GeneralSettings() {
   const contacts = useContactsStore((s) => s.contacts);
   const showToast = useContactsStore((s) => s.showToast);
   const update = useContactsStore((s) => s.update);
+  const platform = useContactsStore((s) => s.platform);
+  const pretty = (acc: string) => acc.replace("CommandOrControl", platform === "darwin" ? "⌘" : "Ctrl");
   const [token, setToken] = useState("");
   const [hotkey, setHotkey] = useState(settings.hotkey);
   const [recording, setRecording] = useState(false);
@@ -21,7 +23,7 @@ export function GeneralSettings() {
   const saveHotkey = async (value: string) => {
     try {
       await updateSettings({ hotkey: value });
-      showToast(value ? `Hotkey set to ${value}` : "Hotkey disabled");
+      showToast(value ? `Hotkey set to ${pretty(value)}` : "Hotkey disabled");
     } catch (err) {
       setHotkey(settings.hotkey);
       showToast(err instanceof Error ? err.message : "Could not register that hotkey", "error");
@@ -72,7 +74,7 @@ export function GeneralSettings() {
         <div className="flex flex-wrap items-center gap-2">
           <Input
             readOnly
-            value={recording ? "Press keys…" : hotkey || "Disabled"}
+            value={recording ? "Press keys…" : hotkey ? pretty(hotkey) : "Disabled"}
             onFocus={() => setRecording(true)}
             onBlur={() => setRecording(false)}
             onKeyDown={record}
