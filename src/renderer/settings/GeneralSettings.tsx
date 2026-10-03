@@ -1,4 +1,9 @@
+import { useEffect, useState } from "react";
+import { Keyboard } from "lucide-react";
+import { Button } from "@renderer/components/ui/button";
+import { Input } from "@renderer/components/ui/input";
 import { Label } from "@renderer/components/ui/label";
+import { DEFAULT_HOTKEY } from "@shared/defaults";
 import { Switch } from "@renderer/components/ui/switch";
 import { useContactsStore } from "@renderer/store/useContacts";
 
@@ -6,6 +11,38 @@ export function GeneralSettings() {
   const settings = useContactsStore((s) => s.settings);
   const updateSettings = useContactsStore((s) => s.updateSettings);
   const contacts = useContactsStore((s) => s.contacts);
+  const showToast = useContactsStore((s) => s.showToast);
+  const [hotkey, setHotkey] = useState(settings.hotkey);
+  const [recording, setRecording] = useState(false);
+  useEffect(() => setHotkey(settings.hotkey), [settings.hotkey]);
+
+  const saveHotkey = async (value: string) => {
+    try {
+      await updateSettings({ hotkey: value });
+      showToast(value ? `Hotkey set to ${value}` : "Hotkey disabled");
+    } catch (err) {
+      setHotkey(settings.hotkey);
+      showToast(err instanceof Error ? err.message : "Could not register that hotkey", "error");
+    }
+  };
+  const record = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
+    const parts: string[] = [];
+    if (e.ctrlKey || e.metaKey) parts.push("CommandOrControl");
+    if (e.altKey) parts.push("Alt");
+    if (e.shiftKey) parts.push("Shift");
+    const key = e.key.length === 1 ? e.key.toUpperCase() : e.key === " " ? "Space" : e.key;
+    if (parts.length === 0 && !/^F\d+$/.test(key)) {
+      showToast("Use at least one modifier (Ctrl, Alt or Shift) or a function key", "error");
+      return;
+    }
+    parts.push(key);
+    const acc = parts.join("+");
+    setHotkey(acc);
+    setRecording(false);
+    void saveHotkey(acc);
+  };
 
   return (
     <div className="max-w-xl space-y-6 pt-2">
@@ -21,6 +58,28 @@ export function GeneralSettings() {
         checked={settings.launchAtLogin}
         onChange={(v) => void updateSettings({ launchAtLogin: v })}
       />
+      <section className="space-y-3 rounded-xl border p-4">
+        <div className="flex items-center gap-2">
+          <Keyboard className="h-4 w-4 text-muted-foreground" />
+          <Label className="text-sm">Summon hotkey</Label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Press it anywhere in Windows to pop the widget up with the search box focused. Type a name, then <kbd>Enter</kbd> calls the top match,
+          <kbd> Alt+Enter</kbd> texts, <kbd>Shift+Enter</kbd> emails, <kbd>Esc</kbd> hides.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            readOnly
+            value={recording ? "Press keys…" : hotkey || "Disabled"}
+            onFocus={() => setRecording(true)}
+            onBlur={() => setRecording(false)}
+            onKeyDown={record}
+            className={`w-64 font-mono text-sm ${recording ? "ring-2 ring-primary" : ""}`}
+          />
+          <Button variant="outline" size="sm" onClick={() => void saveHotkey(DEFAULT_HOTKEY)} disabled={hotkey === DEFAULT_HOTKEY}>Reset</Button>
+          <Button variant="ghost" size="sm" onClick={() => void saveHotkey("")} disabled={!hotkey}>Disable</Button>
+        </div>
+      </section>
       <section className="rounded-xl border p-4 text-sm">
         <p className="font-medium">Tips</p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">

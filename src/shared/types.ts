@@ -27,6 +27,8 @@ export interface Contact {
   email?: string;
   linkedinUrl?: string;
   photo?: ContactPhoto;
+  /** Microsoft Graph user id (organization directory) or contact id, set by M365 sync. */
+  m365?: { kind: "user" | "contact"; id: string; syncedAt: string };
   /** Deterministic hue (0-359) used for the initials avatar. */
   hue: number;
   pinned: boolean;
@@ -56,9 +58,41 @@ export interface WindowBounds {
   height: number;
 }
 
+export interface M365Settings {
+  /** Azure app registration (public client) client id. */
+  clientId: string;
+  /** "organizations", "common", or a tenant id / domain. */
+  tenant: string;
+  /** Poll Teams presence for synced organization users while the widget is visible. */
+  presence: boolean;
+  /** Also sync Outlook personal contacts (/me/contacts). */
+  includeOutlookContacts: boolean;
+}
+
+export interface M365Status {
+  configured: boolean;
+  signedIn: boolean;
+  account?: { name?: string; username: string };
+  lastSyncAt?: string;
+  lastError?: string;
+}
+
+export type PresenceAvailability = "Available" | "Busy" | "DoNotDisturb" | "Away" | "BeRightBack" | "Offline" | "PresenceUnknown";
+export type PresenceMap = Record<string, { availability: PresenceAvailability; activity: string }>;
+
+export interface M365SyncSummary {
+  matched: number;
+  photos: number;
+  updated: number;
+  unmatched: number;
+}
+
 export interface Settings {
   schemaVersion: 1;
   dialer: DialerProvider;
+  /** Electron accelerator that shows the widget and focuses search, "" to disable. */
+  hotkey: string;
+  m365: M365Settings;
   alwaysOnTop: boolean;
   launchAtLogin: boolean;
   appearance: Appearance;

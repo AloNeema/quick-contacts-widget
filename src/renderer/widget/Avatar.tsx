@@ -1,10 +1,48 @@
 import { useState } from "react";
 import { initialsOf } from "@shared/merge";
-import type { Contact } from "@shared/types";
+import type { Contact, PresenceAvailability } from "@shared/types";
 import { cn } from "@renderer/lib/utils";
 import { photoSrc } from "@renderer/store/useContacts";
 
-export function Avatar({ contact, photosBaseUrl, size = 40, className }: { contact: Contact; photosBaseUrl: string; size?: number; className?: string }) {
+const PRESENCE_COLOR: Record<PresenceAvailability, string> = {
+  Available: "#22c55e",
+  Busy: "#ef4444",
+  DoNotDisturb: "#ef4444",
+  Away: "#f59e0b",
+  BeRightBack: "#f59e0b",
+  Offline: "#9ca3af",
+  PresenceUnknown: "#9ca3af",
+};
+
+export function Avatar({
+  contact,
+  photosBaseUrl,
+  size = 40,
+  className,
+  presence,
+}: {
+  contact: Contact;
+  photosBaseUrl: string;
+  size?: number;
+  className?: string;
+  presence?: { availability: PresenceAvailability; activity: string };
+}) {
+  const inner = <AvatarImage contact={contact} photosBaseUrl={photosBaseUrl} size={size} className={className} />;
+  if (!presence) return inner;
+  const dot = Math.max(8, Math.round(size * 0.28));
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }} title={presence.activity}>
+      {inner}
+      <span
+        aria-label={presence.availability}
+        className="absolute bottom-0 right-0 rounded-full ring-2 ring-[hsl(var(--glass-bg))]"
+        style={{ width: dot, height: dot, background: PRESENCE_COLOR[presence.availability] ?? "#9ca3af", boxShadow: `0 0 6px ${PRESENCE_COLOR[presence.availability] ?? "#9ca3af"}80` }}
+      />
+    </div>
+  );
+}
+
+function AvatarImage({ contact, photosBaseUrl, size, className }: { contact: Contact; photosBaseUrl: string; size: number; className?: string }) {
   const [broken, setBroken] = useState(false);
   const src = broken ? undefined : photoSrc(contact, photosBaseUrl);
   const style = { width: size, height: size, fontSize: Math.round(size * 0.36) };

@@ -17,6 +17,8 @@ import {
   resizeWidgetBy,
 } from "./windows";
 import { refreshTrayMenu } from "./tray";
+import { applyHotkey } from "./hotkey";
+import { getPresence, refreshStatus, schedulePresence, signIn, signOut, syncContacts } from "./m365";
 
 const incomingSchema = z.object({
   name: z.string().min(1),
@@ -91,6 +93,18 @@ export function registerIpc(): void {
     if (patch.alwaysOnTop !== undefined) getWidgetWindow()?.setAlwaysOnTop(next.alwaysOnTop, "normal");
     if (patch.launchAtLogin !== undefined) applyLaunchAtLogin(next.launchAtLogin);
     if (patch.appearance && patch.appearance.acrylic !== prev.appearance.acrylic) recreateWidgetWindow();
+    if (patch.hotkey !== undefined && patch.hotkey !== prev.hotkey) {
+      if (!applyHotkey(next.hotkey)) {
+        await patchSettings({ hotkey: prev.hotkey });
+        applyHotkey(prev.hotkey);
+        notify();
+        throw new Error(`"${next.hotkey}" could not be registered. Another app may be using it.`);
+      }
+    }
+    if (patch.m365) {
+      await refreshStatus();
+      schedulePresence();
+    }
     notify();
     return next;
   });
@@ -175,6 +189,15 @@ export function registerIpc(): void {
     createSettingsWindow(typeof tab === "string" ? tab : undefined);
   });
   ipcMain.handle(IPC.windowCloseSettings, () => getSettingsWindow()?.close());
+  ipcMain.handle(IPC.m365Status, () => refreshStatus());
+  ipcMain.handle(IPC.m365SignIn, () => signIn());
+  ipcMain.handle(IPC.m365SignOut, () => signOut());
+  ipcMain.handle(IPC.m365Sync, async () => {
+    const r = await syncContacts();
+    notify();
+    return r;
+  });
+  ipcMain.handle(IPC.presenceGet, () => getPresence());
   ipcMain.handle(IPC.windowToggleAlwaysOnTop, async () => {
     const next = !getState().settings.alwaysOnTop;
     await patchSettings({ alwaysOnTop: next });

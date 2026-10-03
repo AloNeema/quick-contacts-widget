@@ -21,6 +21,26 @@ const api: ContactsApi = {
   openSettings: (tab) => ipcRenderer.invoke(IPC.windowOpenSettings, tab),
   closeSettings: () => ipcRenderer.invoke(IPC.windowCloseSettings),
   toggleAlwaysOnTop: () => ipcRenderer.invoke(IPC.windowToggleAlwaysOnTop),
+  m365Status: () => ipcRenderer.invoke(IPC.m365Status),
+  m365SignIn: () => ipcRenderer.invoke(IPC.m365SignIn),
+  m365SignOut: () => ipcRenderer.invoke(IPC.m365SignOut),
+  m365Sync: () => ipcRenderer.invoke(IPC.m365Sync),
+  getPresence: () => ipcRenderer.invoke(IPC.presenceGet),
+  onPresenceChanged: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, p: Parameters<typeof cb>[0]) => cb(p);
+    ipcRenderer.on(IPC.presenceChanged, listener);
+    return () => ipcRenderer.removeListener(IPC.presenceChanged, listener);
+  },
+  onFocusSearch: (cb) => {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.focusSearch, listener);
+    return () => ipcRenderer.removeListener(IPC.focusSearch, listener);
+  },
+  onM365StatusChanged: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
+    ipcRenderer.on(IPC.m365StatusChanged, listener);
+    return () => ipcRenderer.removeListener(IPC.m365StatusChanged, listener);
+  },
   onStateChanged: (cb) => {
     const listener = (_e: Electron.IpcRendererEvent, state: Parameters<typeof cb>[0]) => cb(state);
     ipcRenderer.on(IPC.stateChanged, listener);

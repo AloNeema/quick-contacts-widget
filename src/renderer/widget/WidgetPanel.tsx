@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pin, PinOff, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
 import { filterContacts } from "@shared/merge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
@@ -34,6 +34,17 @@ export function WidgetPanel() {
   const photosBaseUrl = useContactsStore((s) => s.photosBaseUrl);
   const toast = useContactsStore((s) => s.toast);
   const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const showToast = useContactsStore((s) => s.showToast);
+
+  useEffect(
+    () =>
+      window.contacts.onFocusSearch(() => {
+        setQuery("");
+        requestAnimationFrame(() => searchRef.current?.focus());
+      }),
+    [],
+  );
   const compact = settings.appearance.density === "compact";
   const acrylic = settings.appearance.acrylic && useContactsStore.getState().platform === "win32";
 
@@ -66,9 +77,20 @@ export function WidgetPanel() {
           <div className="no-drag glass-inset relative rounded-xl">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
+              ref={searchRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Escape" && setQuery("")}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  if (query) setQuery("");
+                  else void window.contacts.hideWidget();
+                } else if (e.key === "Enter" && query && visible[0]) {
+                  const c = visible[0];
+                  if (e.shiftKey && c.email) void window.contacts.email(c.email).then((r) => !r.ok && showToast(r.error, "error"));
+                  else if (c.phone) void window.contacts.dial({ action: e.altKey ? "sms" : "call", phone: c.phone }).then((r) => !r.ok && showToast(r.error, "error"));
+                  else if (c.email) void window.contacts.email(c.email).then((r) => !r.ok && showToast(r.error, "error"));
+                }
+              }}
               placeholder="Search name, company, number…"
               className="h-8 w-full rounded-xl bg-transparent pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground/80 focus:outline-none"
             />

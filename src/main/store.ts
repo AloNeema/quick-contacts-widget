@@ -21,6 +21,7 @@ export const contactSchema = z.object({
   phone: z.string().optional(),
   email: z.string().optional(),
   linkedinUrl: z.string().optional(),
+  m365: z.object({ kind: z.enum(["user", "contact"]), id: z.string(), syncedAt: z.string() }).optional(),
   photo: z
     .union([
       z.object({ kind: z.literal("file"), fileName: z.string() }),
@@ -37,6 +38,15 @@ export const contactSchema = z.object({
 export const settingsSchema = z.object({
   schemaVersion: z.literal(1),
   dialer: dialerSchema,
+  hotkey: z.string().max(80).default(DEFAULT_SETTINGS.hotkey),
+  m365: z
+    .object({
+      clientId: z.string().max(200),
+      tenant: z.string().min(1).max(200),
+      presence: z.boolean(),
+      includeOutlookContacts: z.boolean(),
+    })
+    .default(DEFAULT_SETTINGS.m365),
   alwaysOnTop: z.boolean(),
   launchAtLogin: z.boolean(),
   appearance: z.object({

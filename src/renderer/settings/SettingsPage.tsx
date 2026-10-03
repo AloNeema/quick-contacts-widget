@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Contact2, Palette, PhoneCall, Settings as SettingsIcon, Upload } from "lucide-react";
+import { Cloud, Contact2, Palette, PhoneCall, Settings as SettingsIcon, Upload } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@renderer/components/ui/tabs";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { cn } from "@renderer/lib/utils";
@@ -8,8 +8,9 @@ import { ImportWizard } from "./ImportWizard";
 import { DialerSettings } from "./DialerSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { GeneralSettings } from "./GeneralSettings";
+import { M365Settings } from "./M365Settings";
 
-const TABS = ["contacts", "import", "dialer", "appearance", "general"] as const;
+const TABS = ["contacts", "import", "m365", "dialer", "appearance", "general"] as const;
 type Tab = (typeof TABS)[number];
 
 export function SettingsPage({ initialTab }: { initialTab?: string }) {
@@ -35,6 +36,7 @@ export function SettingsPage({ initialTab }: { initialTab?: string }) {
             {[
               ["contacts", "Contacts", Contact2],
               ["import", "Import", Upload],
+              ["m365", "Microsoft 365", Cloud],
               ["dialer", "Call & Text", PhoneCall],
               ["appearance", "Appearance", Palette],
               ["general", "General", SettingsIcon],
@@ -55,6 +57,7 @@ export function SettingsPage({ initialTab }: { initialTab?: string }) {
         <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-8">
           <TabsContent value="contacts"><ContactsEditor /></TabsContent>
           <TabsContent value="import"><ImportWizard onDone={() => setTab("contacts")} /></TabsContent>
+          <TabsContent value="m365"><M365Settings /></TabsContent>
           <TabsContent value="dialer"><DialerSettings /></TabsContent>
           <TabsContent value="appearance"><AppearanceSettings /></TabsContent>
           <TabsContent value="general"><GeneralSettings /></TabsContent>

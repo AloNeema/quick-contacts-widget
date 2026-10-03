@@ -1,4 +1,4 @@
-import type { Appearance, DialerProvider, Settings } from "./types";
+import type { Appearance, DialerProvider, M365Settings, Settings } from "./types";
 
 export const DIALER_PRESETS: Record<Exclude<DialerProvider["id"], "custom">, DialerProvider> = {
   ringcentral: {
@@ -37,9 +37,23 @@ export const DEFAULT_APPEARANCE: Appearance = {
   density: "comfortable",
 };
 
+export const DEFAULT_HOTKEY = "CommandOrControl+Shift+C";
+
+export const DEFAULT_M365: M365Settings = {
+  clientId: "",
+  tenant: "organizations",
+  presence: true,
+  includeOutlookContacts: true,
+};
+
+/** Delegated Graph scopes the sync needs. Presence.Read.All is delegated and does not need admin consent. */
+export const M365_SCOPES = ["User.Read", "User.ReadBasic.All", "Contacts.Read", "People.Read", "Presence.Read.All"];
+
 export const DEFAULT_SETTINGS: Settings = {
   schemaVersion: 1,
   dialer: DIALER_PRESETS.ringcentral,
+  hotkey: DEFAULT_HOTKEY,
+  m365: DEFAULT_M365,
   alwaysOnTop: false,
   launchAtLogin: false,
   appearance: DEFAULT_APPEARANCE,

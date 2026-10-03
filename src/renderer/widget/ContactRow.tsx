@@ -3,9 +3,11 @@ import type { Contact } from "@shared/types";
 import { formatPhoneForDisplay } from "@shared/phone";
 import { cn } from "@renderer/lib/utils";
 import { Avatar } from "./Avatar";
+import { useContactsStore } from "@renderer/store/useContacts";
 import { QuickActions } from "./QuickActions";
 
 export function ContactRow({ contact, photosBaseUrl, compact }: { contact: Contact; photosBaseUrl: string; compact: boolean }) {
+  const presence = useContactsStore((s) => (contact.m365?.kind === "user" ? s.presence[contact.m365.id] : undefined));
   const subtitle = [contact.title, contact.company].filter(Boolean).join(" · ") || formatPhoneForDisplay(contact.phone) || contact.email || "";
   return (
     <li
@@ -14,7 +16,7 @@ export function ContactRow({ contact, photosBaseUrl, compact }: { contact: Conta
         compact ? "py-1.5" : "py-2",
       )}
     >
-      <Avatar contact={contact} photosBaseUrl={photosBaseUrl} size={compact ? 32 : 40} />
+      <Avatar contact={contact} photosBaseUrl={photosBaseUrl} size={compact ? 32 : 40} presence={presence} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <p className={cn("truncate font-medium leading-tight", compact ? "text-[13px]" : "text-sm")}>{contact.name}</p>

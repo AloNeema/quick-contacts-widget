@@ -6,6 +6,10 @@ import { createWidgetWindow, getWidgetWindow } from "./windows";
 import { createTray } from "./tray";
 import { registerIpc } from "./ipc";
 import { applyLaunchAtLogin } from "./autoLaunch";
+import { applyHotkey, releaseHotkey } from "./hotkey";
+import { initM365 } from "./m365";
+import { broadcast } from "./windows";
+import { IPC } from "@shared/ipc";
 
 registerPhotoScheme();
 
@@ -29,6 +33,11 @@ if (!gotLock) {
     createTray();
     applyLaunchAtLogin(state.settings.launchAtLogin);
     createWidgetWindow({ startHidden: process.argv.includes("--hidden") });
+    if (!applyHotkey(state.settings.hotkey)) console.warn("hotkey not registered:", state.settings.hotkey);
+    initM365({
+      onStatus: (s) => broadcast(IPC.m365StatusChanged, s),
+      onPresence: (p) => broadcast(IPC.presenceChanged, p),
+    });
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWidgetWindow();
@@ -40,4 +49,5 @@ if (!gotLock) {
   app.on("before-quit", () => {
     (global as { __quitting?: boolean }).__quitting = true;
   });
+  app.on("will-quit", () => releaseHotkey());
 }

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { DEFAULT_SETTINGS } from "@shared/defaults";
-import type { Contact, Settings } from "@shared/types";
+import type { Contact, M365Status, PresenceMap, Settings } from "@shared/types";
 
 interface ContactsState {
   ready: boolean;
@@ -9,6 +9,8 @@ interface ContactsState {
   photosBaseUrl: string;
   version: string;
   platform: string;
+  presence: PresenceMap;
+  m365: M365Status;
   toast: { id: number; message: string; tone: "info" | "error" } | null;
   hydrate: () => Promise<void>;
   setContacts: (contacts: Contact[]) => void;
@@ -18,6 +20,8 @@ interface ContactsState {
 }
 
 let unsubscribe: (() => void) | null = null;
+let unsubscribePresence: (() => void) | null = null;
+let unsubscribeM365: (() => void) | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useContactsStore = create<ContactsState>((set, get) => ({
@@ -27,12 +31,20 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
   photosBaseUrl: "",
   version: "",
   platform: "",
+  presence: {},
+  m365: { configured: false, signedIn: false },
   toast: null,
   hydrate: async () => {
     const state = await window.contacts.getState();
     set({ ready: true, contacts: state.contacts, settings: state.settings, photosBaseUrl: state.photosBaseUrl, version: state.version, platform: state.platform });
     unsubscribe?.();
     unsubscribe = window.contacts.onStateChanged((next) => set({ contacts: next.contacts, settings: next.settings }));
+    unsubscribePresence?.();
+    unsubscribePresence = window.contacts.onPresenceChanged((presence) => set({ presence }));
+    unsubscribeM365?.();
+    unsubscribeM365 = window.contacts.onM365StatusChanged((m365) => set({ m365 }));
+    void window.contacts.getPresence().then((presence) => set({ presence }));
+    void window.contacts.m365Status().then((m365) => set({ m365 }));
   },
   setContacts: (contacts) => set({ contacts }),
   setSettings: (settings) => set({ settings }),
