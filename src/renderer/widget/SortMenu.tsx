@@ -39,7 +39,7 @@ export function SortMenu({ value, onChange }: { value: ContactSort; onChange: (v
       </button>
       {open ? (
         <div role="menu" className="menu-glass absolute right-0 top-9 z-30 w-48 overflow-hidden rounded-xl p-1 animate-fade-up">
-          <p className="px-2.5 pb-1 pt-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sort by</p>
+          <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Sort by</p>
           {OPTIONS.map(({ value: v, label, Icon }) => (
             <button
               key={v}
@@ -57,7 +57,7 @@ export function SortMenu({ value, onChange }: { value: ContactSort; onChange: (v
               {v === value ? <Check className="h-3.5 w-3.5 text-primary" /> : null}
             </button>
           ))}
-          <p className="px-2.5 pb-1.5 pt-1 text-[10px] leading-snug text-muted-foreground">Pinned contacts stay on top. "Most contacted" counts your calls, texts and emails from the widget.</p>
+          <p className="px-2.5 pb-1.5 pt-1 text-[11px] leading-snug text-muted-foreground">Pinned contacts stay on top. "Most contacted" counts your calls, texts and emails from the widget.</p>
         </div>
       ) : null}
     </div>

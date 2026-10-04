@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Briefcase, CalendarClock, ExternalLink, Loader2, Mail, StickyNote, Video } from "lucide-react";
+import { Briefcase, CalendarClock, ExternalLink, Loader2, Mail, MessageSquare, Phone, StickyNote, Video } from "lucide-react";
 import type { Contact, ContactContext, SalesforceDeals } from "@shared/types";
 import { fmtMoney } from "./ContactRow";
 import { relativeTime } from "@shared/merge";
@@ -50,6 +50,25 @@ export function ContactDetails({ contact }: { contact: Contact }) {
 
   return (
     <div className="no-drag mt-2 space-y-1.5 animate-fade-up pl-[52px] pr-1 text-xs" onClick={(e) => e.stopPropagation()}>
+      {/* Labeled actions: the same as the hover icons, reachable by click, touch and keyboard. */}
+      <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
+        {contact.phone ? (
+          <>
+            <button type="button" className="fu-btn fu-btn-primary" onClick={() => void window.contacts.dial({ action: "call", phone: contact.phone!, contactId: contact.id }).then((r) => !r.ok && showToast(r.error, "error"))}>
+              <Phone className="h-3 w-3" /> Call
+            </button>
+            <button type="button" className="fu-btn" onClick={() => void window.contacts.dial({ action: "sms", phone: contact.phone!, contactId: contact.id }).then((r) => !r.ok && showToast(r.error, "error"))}>
+              <MessageSquare className="h-3 w-3" /> Text
+            </button>
+          </>
+        ) : null}
+        {contact.email ? (
+          <button type="button" className={contact.phone ? "fu-btn" : "fu-btn fu-btn-primary"} onClick={() => void window.contacts.email(contact.email!, contact.id).then((r) => !r.ok && showToast(r.error, "error"))}>
+            <Mail className="h-3 w-3" /> Email
+          </button>
+        ) : null}
+      </div>
+
       {contact.notes ? (
         <p className="flex items-start gap-1.5 text-foreground/80">
           <StickyNote className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
@@ -64,7 +83,7 @@ export function ContactDetails({ contact }: { contact: Contact }) {
             <button type="button" onClick={() => open(deals?.accountUrl ?? deals?.recordUrl)} className="min-w-0 flex-1 truncate text-left font-medium text-foreground/90 hover:underline underline-offset-2">
               {contact.sf.accountName ?? (contact.sf.kind === "lead" ? "Lead" : "Salesforce record")}
             </button>
-            <button type="button" onClick={() => open(deals?.recordUrl)} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground" disabled={!deals?.recordUrl}>
+            <button type="button" onClick={() => open(deals?.recordUrl)} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground" disabled={!deals?.recordUrl}>
               Open <ExternalLink className="h-3 w-3" />
             </button>
           </div>
@@ -76,7 +95,7 @@ export function ContactDetails({ contact }: { contact: Contact }) {
                 <li key={d.id}>
                   <button type="button" onClick={() => open(d.url)} className="flex w-full items-center gap-2 text-left hover:underline underline-offset-2">
                     <span className="min-w-0 flex-1 truncate text-foreground/85">{d.name}</span>
-                    <span className="deal-pill shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium">{d.stage}</span>
+                    <span className="deal-pill shrink-0 rounded-full px-1.5 py-px text-[11px] font-medium">{d.stage}</span>
                     {d.amount ? <span className="shrink-0 tabular-nums text-muted-foreground">{fmtMoney(d.amount)}</span> : null}
                   </button>
                 </li>
@@ -106,7 +125,7 @@ export function ContactDetails({ contact }: { contact: Contact }) {
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1.5">
                   <span className="truncate font-medium text-foreground/90">{ctx.lastEmail.subject}</span>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">{ctx.lastEmail.direction === "in" ? "from them" : "from you"} · {relativeTime(ctx.lastEmail.receivedAt)}</span>
+                  <span className="shrink-0 text-[11px] text-muted-foreground">{ctx.lastEmail.direction === "in" ? "from them" : "from you"} · {relativeTime(ctx.lastEmail.receivedAt)}</span>
                 </span>
                 {ctx.lastEmail.preview ? <span className="line-clamp-1 text-muted-foreground">{ctx.lastEmail.preview}</span> : null}
               </span>

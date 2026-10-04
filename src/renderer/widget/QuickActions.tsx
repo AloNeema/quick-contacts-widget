@@ -26,7 +26,7 @@ export function QuickActions({ contact, compact }: { contact: Contact; compact?:
   };
 
   return (
-    <div className={compact ? "flex items-center gap-1 [&_.action-btn]:h-7 [&_.action-btn]:w-7" : "flex items-center gap-1.5"}>
+    <div className={compact ? "flex items-center gap-1 [&_.action-btn]:h-7 [&_.action-btn]:w-7" : "flex items-center gap-1"}>
       <Action label={contact.phone ? `Call ${contact.name.split(" ")[0]}` : "No phone"} disabled={!contact.phone} onClick={() => void run(window.contacts.dial({ action: "call", phone: contact.phone!, contactId: contact.id }))}>
         <Phone className={iconClass} />
       </Action>

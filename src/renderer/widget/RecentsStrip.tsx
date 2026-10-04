@@ -18,7 +18,7 @@ export function RecentsStrip({ contacts, photosBaseUrl }: { contacts: Contact[];
 
   return (
     <div className="no-drag relative z-10 px-3 pb-2">
-      <div className="mb-1.5 flex items-center gap-1.5 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/80">
+      <div className="mb-1.5 flex items-center gap-1.5 px-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80">
         <Clock className="h-3 w-3" /> Recent
       </div>
       <div className="flex gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -32,7 +32,7 @@ export function RecentsStrip({ contacts, photosBaseUrl }: { contacts: Contact[];
                 className="group/recent flex w-14 shrink-0 flex-col items-center gap-1 rounded-xl py-1 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
                 <Avatar contact={c} photosBaseUrl={photosBaseUrl} size={38} presence={c.m365?.kind === "user" ? presence[c.m365.id] : undefined} />
-                <span className="w-full truncate text-center text-[10px] leading-tight text-foreground/85">{c.name.split(" ")[0]}</span>
+                <span className="w-full truncate text-center text-[11px] leading-tight text-foreground/85">{c.name.split(" ")[0]}</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom">

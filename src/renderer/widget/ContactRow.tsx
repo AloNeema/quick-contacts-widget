@@ -40,30 +40,37 @@ export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle }: 
         aria-expanded={open}
         onClick={onToggle}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle())}
-        className="flex cursor-default items-center gap-3 focus-visible:outline-none"
+        className="flex cursor-default items-center gap-3 rounded-xl"
       >
       <Avatar contact={contact} photosBaseUrl={photosBaseUrl} size={compact ? 32 : 40} presence={presence} />
-      <div className="min-w-0 flex-1">
+      {/* Text column reserves room for the hover actions instead of being painted over by them. */}
+      <div className="min-w-0 flex-1 transition-[padding] duration-150 group-hover:pr-[106px] group-focus-within:pr-[106px]">
         <div className="flex items-center gap-1.5">
-          <p className={cn("truncate font-medium leading-tight", compact ? "text-[13px]" : "text-sm")}>{contact.name}</p>
+          <p className={cn("min-w-0 truncate font-medium leading-tight", compact ? "text-[13px]" : "text-sm")}>{contact.name}</p>
           {contact.pinned ? <Pin className="h-3 w-3 shrink-0 fill-current text-primary" aria-label="Pinned" /> : null}
           {contact.notes ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex shrink-0 text-muted-foreground/70" aria-label="Has a note"><StickyNote className="h-3 w-3" /></span>
+                <span className="inline-flex shrink-0 text-muted-foreground/80" aria-label={`Note: ${contact.notes}`}><StickyNote className="h-3 w-3" /></span>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[240px] whitespace-pre-wrap">{contact.notes}</TooltipContent>
             </Tooltip>
           ) : null}
-          {deal ? (
-            <span className="deal-pill shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium" title={deal.name}>
-              {deal.stage}{deal.amount ? ` · ${fmtMoney(deal.amount)}` : ""}
+          {contact.lastContactedAt ? (
+            <span className="ml-auto shrink-0 pl-2 text-[11px] tabular-nums text-muted-foreground group-hover:hidden group-focus-within:hidden" title={`Last contacted ${new Date(contact.lastContactedAt).toLocaleString()}`}>
+              {relativeTime(contact.lastContactedAt)}
             </span>
           ) : null}
-          {contact.lastContactedAt ? <span className="ml-auto shrink-0 pl-2 text-[10px] tabular-nums text-muted-foreground/70 group-hover:opacity-0">{relativeTime(contact.lastContactedAt)}</span> : null}
         </div>
-        <div className="relative h-4 text-xs leading-tight text-muted-foreground">
-          {subtitle ? <p className="absolute inset-0 truncate transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0">{subtitle}</p> : null}
+        <div className="relative h-[18px] text-xs leading-[18px] text-muted-foreground">
+          <p className="absolute inset-0 flex items-center gap-1.5 transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0">
+            {deal ? (
+              <span className="deal-pill shrink-0 rounded-full px-1.5 text-[11px] font-medium leading-[16px]" title={`${deal.name} · Salesforce`}>
+                {deal.stage}{deal.amount ? ` · ${fmtMoney(deal.amount)}` : ""}
+              </span>
+            ) : null}
+            <span className="min-w-0 truncate">{subtitle}</span>
+          </p>
           <p className="absolute inset-0 flex items-center gap-2 truncate opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
             {contact.phone ? <CopyField value={contact.phone} label={formatPhoneForDisplay(contact.phone)} /> : null}
             {contact.email ? <CopyField value={contact.email} label={contact.email} /> : null}
@@ -73,12 +80,12 @@ export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle }: 
       </div>
       </div>
       {open ? <ContactDetails contact={contact} /> : null}
-      {/* Actions float over the right edge on hover so names keep the full row width otherwise. */}
+      {/* Quick actions sit in space the text column gives up on hover/focus, so they never hide the name. */}
       <div
         className={cn(
-          "pointer-events-none absolute right-1.5 flex translate-x-1 items-center rounded-full pl-6 opacity-0 transition-all duration-200 ease-out",
-          compact ? "top-1" : "top-1.5",
-          "bg-[linear-gradient(90deg,transparent,hsl(var(--glass-bg)/0.85)_28px)] group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-x-0 group-focus-within:opacity-100",
+          "pointer-events-none absolute right-2 flex translate-x-1 items-center opacity-0 transition-all duration-200 ease-out",
+          compact ? "top-1.5" : "top-2.5",
+          "group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-x-0 group-focus-within:opacity-100",
         )}
       >
         <QuickActions contact={contact} compact={compact} />
