@@ -7,7 +7,7 @@ import { Label } from "@renderer/components/ui/label";
 import { Switch } from "@renderer/components/ui/switch";
 import { useContactsStore } from "@renderer/store/useContacts";
 
-const FIELD_ORDER: ImportField[] = ["name", "firstName", "lastName", "title", "company", "email", "phone", "group", "notes", "linkedinUrl", "photoUrl", "ignore"];
+const FIELD_ORDER: ImportField[] = ["name", "firstName", "lastName", "title", "company", "email", "phone", "group", "notes", "website", "linkedinUrl", "photoUrl", "ignore"];
 
 export function ImportWizard({ onDone }: { onDone: () => void }) {
   const setContacts = useContactsStore((s) => s.setContacts);

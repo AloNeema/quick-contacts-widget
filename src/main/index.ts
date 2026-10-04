@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from "electron";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
-import { loadState } from "./store";
+import { getState as loadedState, loadState } from "./store";
 import { handlePhotoScheme, registerPhotoScheme } from "./photos";
 import { createWidgetWindow, getWidgetWindow } from "./windows";
 import { createTray } from "./tray";
@@ -10,6 +10,7 @@ import { applyHotkey, releaseHotkey } from "./hotkey";
 import { initM365 } from "./m365";
 import { initUpdater } from "./updater";
 import { initSalesforce } from "./salesforce";
+import { refreshLogos } from "./logos";
 import { broadcast } from "./windows";
 import { IPC } from "@shared/ipc";
 
@@ -39,6 +40,17 @@ if (!gotLock) {
     if (!applyHotkey(state.settings.hotkey)) console.warn("hotkey not registered:", state.settings.hotkey);
     initUpdater((s) => broadcast(IPC.updateStatusChanged, s));
     initSalesforce((s) => broadcast(IPC.sfStatusChanged, s));
+    // Company logos in the background a few seconds after launch.
+    setTimeout(() => {
+      void refreshLogos()
+        .then((n) => {
+          if (n > 0) {
+            const s = loadedState();
+            broadcast(IPC.stateChanged, { settings: s.settings, contacts: s.contacts });
+          }
+        })
+        .catch((err) => console.warn("logo refresh failed", err));
+    }, 3000);
     initM365({
       onStatus: (s) => broadcast(IPC.m365StatusChanged, s),
       onPresence: (p) => broadcast(IPC.presenceChanged, p),

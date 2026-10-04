@@ -2,7 +2,7 @@ import { useState } from "react";
 import { initialsOf } from "@shared/merge";
 import type { Contact, PresenceAvailability } from "@shared/types";
 import { cn } from "@renderer/lib/utils";
-import { photoSrc } from "@renderer/store/useContacts";
+import { logoSrc, photoSrc, useContactsStore } from "@renderer/store/useContacts";
 
 const PRESENCE_COLOR: Record<PresenceAvailability, string> = {
   Available: "#22c55e",
@@ -44,8 +44,26 @@ export function Avatar({
 
 function AvatarImage({ contact, photosBaseUrl, size, className }: { contact: Contact; photosBaseUrl: string; size: number; className?: string }) {
   const [broken, setBroken] = useState(false);
+  const [logoBroken, setLogoBroken] = useState(false);
+  const logosOn = useContactsStore((s) => s.settings.companyLogos);
   const src = broken ? undefined : photoSrc(contact, photosBaseUrl);
+  const logo = logoBroken ? undefined : logoSrc(contact, photosBaseUrl, logosOn);
   const style = { width: size, height: size, fontSize: Math.round(size * 0.36) };
+  if (!src && logo) {
+    // Logos are usually square marks on transparent or white: show them whole on a white disc.
+    return (
+      <div style={style} className={cn("avatar-ring flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white", className)} title={contact.logo?.domain}>
+        <img
+          src={logo}
+          alt=""
+          draggable={false}
+          onError={() => setLogoBroken(true)}
+          style={{ width: Math.round(size * 0.76), height: Math.round(size * 0.76) }}
+          className="object-contain"
+        />
+      </div>
+    );
+  }
   if (src) {
     return (
       <img

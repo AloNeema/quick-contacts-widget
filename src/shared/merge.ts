@@ -29,6 +29,7 @@ export function createContact(input: IncomingContact, order: number, now = new D
     phone: input.phone,
     email: input.email,
     linkedinUrl: input.linkedinUrl,
+    website: input.website,
     group: input.group,
     notes: input.notes,
     photo: input.photoUrl ? { kind: "url", url: input.photoUrl } : undefined,
@@ -85,6 +86,7 @@ export function mergeContacts(
       set("title", inc.title);
       set("company", inc.company);
       set("linkedinUrl", inc.linkedinUrl);
+      set("website", inc.website);
       set("group", inc.group);
       if (inc.notes && !match.notes) set("notes", inc.notes); // never overwrite a personal note
       if (inc.email && !match.email) set("email", inc.email);

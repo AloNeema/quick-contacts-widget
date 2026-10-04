@@ -83,6 +83,7 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
       title: draft.title?.trim() || undefined,
       company: draft.company?.trim() || undefined,
       linkedinUrl: draft.linkedinUrl?.trim() || undefined,
+      website: draft.website?.trim() || undefined,
       group: draft.group?.trim() || undefined,
       notes: draft.notes?.trim() || undefined,
       phone: phone || undefined,
@@ -152,6 +153,9 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
             </Field>
             <Field label="Notes">
               <Input value={draft.notes ?? ""} onChange={(e) => set("notes", e.target.value)} placeholder="Prefers texts after 3pm" />
+            </Field>
+            <Field label="Company website (for the logo)" className="col-span-2">
+              <Input value={draft.website ?? ""} onChange={(e) => set("website", e.target.value)} placeholder="Optional. Defaults to their email domain, e.g. acmebank.com" />
             </Field>
             <Field label="LinkedIn profile URL" className="col-span-2">
               <Input value={draft.linkedinUrl ?? ""} onChange={(e) => set("linkedinUrl", e.target.value)} placeholder="https://www.linkedin.com/in/…" />

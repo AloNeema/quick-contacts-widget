@@ -76,6 +76,11 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
   },
 }));
 
+export function logoSrc(contact: Contact, photosBaseUrl: string, enabled: boolean): string | undefined {
+  if (!enabled || !contact.logo) return undefined;
+  return `${photosBaseUrl}${encodeURIComponent(contact.logo.fileName)}`;
+}
+
 export function photoSrc(contact: Contact, photosBaseUrl: string): string | undefined {
   if (!contact.photo) return undefined;
   if (contact.photo.kind === "url") return contact.photo.url;

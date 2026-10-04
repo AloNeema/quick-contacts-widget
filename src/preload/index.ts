@@ -32,6 +32,7 @@ const api: ContactsApi = {
   setUpdateToken: (token) => ipcRenderer.invoke(IPC.updateSetToken, token),
   dockExpand: (expanded) => ipcRenderer.invoke(IPC.dockExpand, expanded),
   getContext: (contactId) => ipcRenderer.invoke(IPC.contextGet, contactId),
+  refreshLogos: (force) => ipcRenderer.invoke(IPC.logosRefresh, force === true),
   sfStatus: () => ipcRenderer.invoke(IPC.sfStatus),
   sfSignIn: () => ipcRenderer.invoke(IPC.sfSignIn),
   sfSignOut: () => ipcRenderer.invoke(IPC.sfSignOut),

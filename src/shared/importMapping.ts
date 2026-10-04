@@ -16,6 +16,7 @@ export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
   phone: "Phone",
   linkedinUrl: "LinkedIn URL",
   photoUrl: "Photo URL",
+  website: "Website",
   group: "Group / tag",
   notes: "Notes",
   ignore: "Ignore",
@@ -44,6 +45,7 @@ function fieldFromHeader(h: string): ImportField | null {
   if (!s) return null;
   if (/linkedin/.test(s)) return "linkedinUrl";
   if (/(photo|avatar|picture|image|headshot)/.test(s)) return "photoUrl";
+  if (/^(website|web site|web|url|domain|site|homepage)$/.test(s) || /\b(website|domain|homepage)\b/.test(s)) return "website";
   if (/^(group|tag|tags|category|type|segment|list)$/.test(s) || /\b(group|tag|category)\b/.test(s)) return "group";
   if (/(note|notes|comment|comments|remarks)/.test(s)) return "notes";
   if (/e-?mail/.test(s)) return "email";
@@ -159,6 +161,7 @@ export function buildIncomingContacts(dataRows: string[][], mapping: ImportField
   const iPhone = col("phone");
   const iLinkedin = col("linkedinUrl");
   const iPhoto = col("photoUrl");
+  const iWebsite = col("website");
   const iGroup = col("group");
   const iNotes = col("notes");
 
@@ -194,6 +197,7 @@ export function buildIncomingContacts(dataRows: string[][], mapping: ImportField
       phone: phone || undefined,
       linkedinUrl: URL_RE.test(linkedinUrl) ? linkedinUrl : linkedinUrl ? `https://${linkedinUrl.replace(/^\/+/, "")}` : undefined,
       photoUrl: URL_RE.test(photoUrl) ? photoUrl : undefined,
+      website: cell(row, iWebsite) || undefined,
       group: cell(row, iGroup) || undefined,
       notes: cell(row, iNotes) || undefined,
     });

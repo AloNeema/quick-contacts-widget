@@ -56,6 +56,7 @@ export const SALESFORCE_SCOPES = "api refresh_token openid";
 
 export const DEFAULT_SETTINGS: Settings = {
   schemaVersion: 1,
+  companyLogos: true,
   dialer: DIALER_PRESETS.ringcentral,
   hotkey: DEFAULT_HOTKEY,
   m365: DEFAULT_M365,

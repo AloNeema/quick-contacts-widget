@@ -1,3 +1,5 @@
+import { RefreshCw } from "lucide-react";
+import { Button } from "@renderer/components/ui/button";
 import { Label } from "@renderer/components/ui/label";
 import { Slider } from "@renderer/components/ui/slider";
 import { Switch } from "@renderer/components/ui/switch";
@@ -9,6 +11,8 @@ const ACCENTS = [212, 262, 330, 160, 24, 45];
 export function AppearanceSettings() {
   const appearance = useContactsStore((s) => s.settings.appearance);
   const dock = useContactsStore((s) => s.settings.dock);
+  const companyLogos = useContactsStore((s) => s.settings.companyLogos);
+  const showToast = useContactsStore((s) => s.showToast);
   const updateSettings = useContactsStore((s) => s.updateSettings);
   const set = (patch: Partial<typeof appearance>) => void updateSettings({ appearance: { ...appearance, ...patch } });
 
@@ -60,6 +64,19 @@ export function AppearanceSettings() {
               {d}
             </button>
           ))}
+        </div>
+      </Row>
+      <Row label="Company logos" hint="Contacts without a photo show their company's website logo, taken from their work email domain (or the Website field). Personal addresses like Gmail fall back to initials.">
+        <div className="flex items-center gap-3">
+          <Switch checked={companyLogos} onCheckedChange={(v) => void updateSettings({ companyLogos: v })} />
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!companyLogos}
+            onClick={() => void window.contacts.refreshLogos(true).then((n) => showToast(n ? `Updated ${n} logos` : "Logos are up to date"))}
+          >
+            <RefreshCw /> Refresh logos
+          </Button>
         </div>
       </Row>
       <Row label="Dock to screen edge" hint="Collapses the widget into a slim strip of avatars on one edge of the screen; it expands when you hover and stays above other windows.">

@@ -21,6 +21,7 @@ import { refreshTrayMenu } from "./tray";
 import { applyHotkey } from "./hotkey";
 import { getContactContext, getPresence, refreshStatus, schedulePresence, signIn, signOut, syncContacts } from "./m365";
 import { checkForUpdates, getUpdateStatus, installUpdate, rescheduleUpdates, setUpdateToken } from "./updater";
+import { refreshLogos } from "./logos";
 import { sfDeals, sfRefreshStatus, sfSignIn, sfSignOut, sfSync } from "./salesforce";
 
 const incomingSchema = z.object({
@@ -31,6 +32,7 @@ const incomingSchema = z.object({
   email: z.string().optional(),
   linkedinUrl: z.string().optional(),
   photoUrl: z.string().optional(),
+  website: z.string().optional(),
   group: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -45,6 +47,13 @@ function notify(): void {
   const s = getState();
   broadcast(IPC.stateChanged, { settings: s.settings, contacts: s.contacts });
   refreshTrayMenu();
+}
+
+/** Fetch logos for any new company domains in the background, then push the update. */
+function refreshLogosSoon(): void {
+  void refreshLogos()
+    .then((n) => n > 0 && notify())
+    .catch((err) => console.warn("logo refresh failed", err));
 }
 
 async function recordUse(contactId: string | undefined): Promise<void> {
@@ -75,6 +84,7 @@ export function registerIpc(): void {
     for (const c of before) if (!keep.has(c.id)) await deletePhotoForContact(c);
     const saved = await setContacts(contacts);
     notify();
+    refreshLogosSoon();
     return saved;
   });
 
@@ -85,6 +95,7 @@ export function registerIpc(): void {
     const next = idx === -1 ? [...list, contact] : list.map((c) => (c.id === contact.id ? contact : c));
     const saved = await setContacts(next);
     notify();
+    refreshLogosSoon();
     return saved;
   });
 
@@ -116,6 +127,7 @@ export function registerIpc(): void {
     if (patch.dock && (patch.dock.enabled !== prev.dock.enabled || patch.dock.side !== prev.dock.side)) applyDockLayout(false);
     if (patch.alwaysOnTop !== undefined && next.dock.enabled) getWidgetWindow()?.setAlwaysOnTop(true, "normal");
     if (patch.salesforce) await sfRefreshStatus();
+    if (patch.companyLogos === true && !prev.companyLogos) refreshLogosSoon();
     if (patch.m365) {
       await refreshStatus();
       schedulePresence();
@@ -158,6 +170,7 @@ export function registerIpc(): void {
     }
     await setContacts(contacts);
     notify();
+    refreshLogosSoon();
     return { contacts: getState().contacts, summary };
   });
 
@@ -208,6 +221,11 @@ export function registerIpc(): void {
     const r = await sfDeals(z.string().parse(raw));
     notify();
     return r;
+  });
+  ipcMain.handle(IPC.logosRefresh, async (_e, raw: unknown) => {
+    const n = await refreshLogos({ force: z.boolean().parse(raw) });
+    if (n > 0) notify();
+    return n;
   });
   ipcMain.handle(IPC.contextGet, (_e, raw: unknown) => getContactContext(z.string().parse(raw)));
   ipcMain.handle(IPC.dockExpand, (_e, raw: unknown) => {

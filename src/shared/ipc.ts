@@ -31,6 +31,7 @@ export const IPC = {
   updateSetToken: "update:set-token",
   dockExpand: "dock:expand",
   contextGet: "context:get",
+  logosRefresh: "logos:refresh",
   sfStatus: "sf:status",
   sfSignIn: "sf:sign-in",
   sfSignOut: "sf:sign-out",
@@ -86,6 +87,8 @@ export interface ContactsApi {
   dockExpand(expanded: boolean): Promise<void>;
   /** Last email and next meeting with this person from Outlook (needs Microsoft 365 sign-in). */
   getContext(contactId: string): Promise<ContactContext>;
+  /** Re-fetch company logos; force ignores the cache. Resolves to the number of contacts updated. */
+  refreshLogos(force?: boolean): Promise<number>;
   sfStatus(): Promise<SalesforceStatus>;
   sfSignIn(): Promise<SalesforceStatus>;
   sfSignOut(): Promise<SalesforceStatus>;

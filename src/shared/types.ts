@@ -31,6 +31,10 @@ export interface Contact {
   /** One-line personal note. */
   notes?: string;
   photo?: ContactPhoto;
+  /** Company website, used for the logo when the email is on a personal domain. */
+  website?: string;
+  /** Company logo fetched from the email / website domain; shown when there is no personal photo. */
+  logo?: { domain: string; fileName: string };
   /** Microsoft Graph user id (organization directory) or contact id, set by M365 sync. */
   m365?: { kind: "user" | "contact"; id: string; syncedAt: string };
   /** Salesforce link set by sync: the Contact (or Lead) and its Account, plus a snapshot of the top open deal. */
@@ -176,6 +180,8 @@ export interface DockSettings {
 
 export interface Settings {
   schemaVersion: 1;
+  /** Show the company website logo when a contact has no photo. */
+  companyLogos: boolean;
   dock: DockSettings;
   /** Check GitHub Releases for new versions (packaged app only). */
   autoUpdate: boolean;
@@ -206,6 +212,7 @@ export type ImportField =
   | "phone"
   | "linkedinUrl"
   | "photoUrl"
+  | "website"
   | "group"
   | "notes"
   | "ignore";
@@ -218,6 +225,7 @@ export interface IncomingContact {
   email?: string;
   linkedinUrl?: string;
   photoUrl?: string;
+  website?: string;
   group?: string;
   notes?: string;
 }
