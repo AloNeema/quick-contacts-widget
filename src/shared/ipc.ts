@@ -1,4 +1,4 @@
-import type { Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, UpdateStatus } from "./types";
+import type { ClientsState, Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, UpdateStatus } from "./types";
 
 export const IPC = {
   stateGet: "state:get",
@@ -32,6 +32,14 @@ export const IPC = {
   dockExpand: "dock:expand",
   contextGet: "context:get",
   logosRefresh: "logos:refresh",
+  clientsGet: "clients:get",
+  clientsScan: "clients:scan",
+  clientsMark: "clients:mark",
+  clientsAddContact: "clients:add-contact",
+  clientsRestoreHidden: "clients:restore-hidden",
+  clientsViewed: "clients:viewed",
+  clientsChanged: "clients:changed",
+  widgetShowTab: "widget:show-tab",
   sfStatus: "sf:status",
   sfSignIn: "sf:sign-in",
   sfSignOut: "sf:sign-out",
@@ -89,6 +97,17 @@ export interface ContactsApi {
   getContext(contactId: string): Promise<ContactContext>;
   /** Re-fetch company logos; force ignores the cache. Resolves to the number of contacts updated. */
   refreshLogos(force?: boolean): Promise<number>;
+  getClients(): Promise<ClientsState>;
+  scanClients(): Promise<ClientsState>;
+  /** hide: off the list until they email again; notClient: never show; restore: undo either. */
+  markClient(email: string, action: "hide" | "notClient" | "restore"): Promise<ClientsState>;
+  addClientContact(email: string): Promise<Contact[]>;
+  /** Bring back everyone hidden or marked "not a client". Resolves to how many. */
+  restoreHiddenClients(): Promise<number>;
+  /** The Clients tab was opened: clears the "new" badge. */
+  markClientsViewed(): Promise<ClientsState>;
+  onClientsChanged(cb: (state: ClientsState) => void): () => void;
+  onShowTab(cb: (tab: "contacts" | "clients") => void): () => void;
   sfStatus(): Promise<SalesforceStatus>;
   sfSignIn(): Promise<SalesforceStatus>;
   sfSignOut(): Promise<SalesforceStatus>;

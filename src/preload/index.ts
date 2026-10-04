@@ -33,6 +33,22 @@ const api: ContactsApi = {
   dockExpand: (expanded) => ipcRenderer.invoke(IPC.dockExpand, expanded),
   getContext: (contactId) => ipcRenderer.invoke(IPC.contextGet, contactId),
   refreshLogos: (force) => ipcRenderer.invoke(IPC.logosRefresh, force === true),
+  getClients: () => ipcRenderer.invoke(IPC.clientsGet),
+  scanClients: () => ipcRenderer.invoke(IPC.clientsScan),
+  markClient: (email, action) => ipcRenderer.invoke(IPC.clientsMark, email, action),
+  addClientContact: (email) => ipcRenderer.invoke(IPC.clientsAddContact, email),
+  restoreHiddenClients: () => ipcRenderer.invoke(IPC.clientsRestoreHidden),
+  markClientsViewed: () => ipcRenderer.invoke(IPC.clientsViewed),
+  onClientsChanged: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
+    ipcRenderer.on(IPC.clientsChanged, listener);
+    return () => ipcRenderer.removeListener(IPC.clientsChanged, listener);
+  },
+  onShowTab: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, t: Parameters<typeof cb>[0]) => cb(t);
+    ipcRenderer.on(IPC.widgetShowTab, listener);
+    return () => ipcRenderer.removeListener(IPC.widgetShowTab, listener);
+  },
   sfStatus: () => ipcRenderer.invoke(IPC.sfStatus),
   sfSignIn: () => ipcRenderer.invoke(IPC.sfSignIn),
   sfSignOut: () => ipcRenderer.invoke(IPC.sfSignOut),

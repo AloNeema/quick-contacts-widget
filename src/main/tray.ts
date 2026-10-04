@@ -31,6 +31,18 @@ export function createTray(): Tray {
   return tray;
 }
 
+let badge = 0;
+
+/** New-client count: tooltip everywhere, number next to the menu-bar icon on macOS. */
+export function setTrayBadge(count: number): void {
+  if (count === badge) return;
+  badge = count;
+  if (!tray) return;
+  tray.setToolTip(count ? `QCF Contacts · ${count} new client${count === 1 ? "" : "s"}` : "QCF Contacts");
+  if (process.platform === "darwin") tray.setTitle(count ? ` ${count}` : "");
+  refreshTrayMenu();
+}
+
 export function refreshTrayMenu(): void {
   if (!tray) return;
   const { settings } = getState();
@@ -38,6 +50,21 @@ export function refreshTrayMenu(): void {
   const menu = Menu.buildFromTemplate([
     { label: widget?.isVisible() ? "Hide widget" : "Show widget", click: () => toggleWidgetVisibility() },
     { label: "Settings…", click: () => createSettingsWindow() },
+    ...(badge
+      ? [
+          {
+            label: `${badge} new client${badge === 1 ? "" : "s"}`,
+            click: () => {
+              const w = getWidgetWindow();
+              if (w) {
+                w.show();
+                w.focus();
+                w.webContents.send("widget:show-tab", "clients");
+              }
+            },
+          },
+        ]
+      : []),
     { type: "separator" },
     {
       label: "Always on top",

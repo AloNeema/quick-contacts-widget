@@ -1,4 +1,4 @@
-import type { Appearance, DialerProvider, M365Settings, SalesforceSettings, Settings } from "./types";
+import type { Appearance, DialerProvider, ClientSettings, M365Settings, SalesforceSettings, Settings } from "./types";
 
 export const DIALER_PRESETS: Record<Exclude<DialerProvider["id"], "custom">, DialerProvider> = {
   ringcentral: {
@@ -54,8 +54,18 @@ export const DEFAULT_SALESFORCE: SalesforceSettings = { consumerKey: "", loginUr
 export const SALESFORCE_REDIRECT_URI = "http://localhost:48217/callback";
 export const SALESFORCE_SCOPES = "api refresh_token openid";
 
+export const DEFAULT_CLIENTS: ClientSettings = {
+  enabled: true,
+  lookbackDays: 60,
+  internalDomains: [],
+  lenderDomains: [],
+  useSalesforce: true,
+};
+
 export const DEFAULT_SETTINGS: Settings = {
   schemaVersion: 1,
+  sort: "manual",
+  clients: DEFAULT_CLIENTS,
   companyLogos: true,
   dialer: DIALER_PRESETS.ringcentral,
   hotkey: DEFAULT_HOTKEY,

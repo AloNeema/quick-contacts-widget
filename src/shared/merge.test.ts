@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createContact, filterContacts, hueForName, initialsOf, mergeContacts, moveContact, normalizeOrder, recentContacts, recordContactUse, groupsOf, relativeTime } from "./merge";
+import { createContact, filterContacts, hueForName, initialsOf, mergeContacts, moveContact, normalizeOrder, recentContacts, recordContactUse, groupsOf, relativeTime, sortContacts } from "./merge";
 import type { Contact } from "./types";
 
 const NOW = "2026-10-02T00:00:00.000Z";
@@ -87,6 +87,23 @@ describe("groups, notes and relative time", () => {
     expect(relativeTime("2026-10-03T06:00:00Z", now)).toBe("6h ago");
     expect(relativeTime("2026-09-30T12:00:00Z", now)).toBe("3d ago");
     expect(relativeTime(undefined, now)).toBe("");
+  });
+});
+
+describe("sortContacts", () => {
+  const a = mk({ name: "alice", lastContactedAt: "2026-10-01T00:00:00Z", contactCount: 2 }, 2);
+  const b = mk({ name: "Bob", lastContactedAt: "2026-10-03T00:00:00Z", contactCount: 1 }, 0);
+  const c = mk({ name: "Carl", contactCount: 5 }, 1);
+  const p = mk({ name: "Zed", pinned: true }, 3);
+  const names = (list: ReturnType<typeof sortContacts>) => list.map((x) => x.name);
+  it("keeps pinned on top in every mode", () => {
+    for (const s of ["manual", "name", "recent", "frequent"] as const) expect(sortContacts([a, b, c, p], s)[0].name).toBe("Zed");
+  });
+  it("sorts A to Z, recent first, and most contacted first", () => {
+    expect(names(sortContacts([a, b, c, p], "manual"))).toEqual(["Zed", "Bob", "Carl", "alice"]);
+    expect(names(sortContacts([a, b, c, p], "name"))).toEqual(["Zed", "alice", "Bob", "Carl"]);
+    expect(names(sortContacts([a, b, c, p], "recent"))).toEqual(["Zed", "Bob", "alice", "Carl"]);
+    expect(names(sortContacts([a, b, c, p], "frequent"))).toEqual(["Zed", "Carl", "alice", "Bob"]);
   });
 });
 

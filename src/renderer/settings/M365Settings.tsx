@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Cloud, LogIn, LogOut, RefreshCw } from "lucide-react";
+import { Cloud, Inbox, LogIn, LogOut, RefreshCw } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 import { Input } from "@renderer/components/ui/input";
 import { Label } from "@renderer/components/ui/label";
@@ -16,6 +16,17 @@ export function M365Settings() {
   const [clientId, setClientId] = useState(m365.clientId);
   const [tenant, setTenant] = useState(m365.tenant);
   const [busy, setBusy] = useState<"signin" | "sync" | null>(null);
+  const cl = useContactsStore((s) => s.settings.clients);
+  const clients = useContactsStore((s) => s.clients);
+  const sfSignedIn = useContactsStore((s) => s.sf.signedIn);
+  const [domains, setDomains] = useState(cl.internalDomains.join(", "));
+  const [lenders, setLenders] = useState(cl.lenderDomains.join(", "));
+  const setCl = (patch: Partial<typeof cl>) => void updateSettings({ clients: { ...cl, ...patch } });
+  const splitDomains = (v: string) => [...new Set(v.split(/[\s,;]+/).map((d) => d.trim().toLowerCase().replace(/^@/, "").replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0]).filter(Boolean))];
+  const num = (v: string, min: number, max: number, fallback: number) => {
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+  };
 
   const synced = contacts.filter((c) => c.m365).length;
   const dirty = clientId.trim() !== m365.clientId || tenant.trim() !== m365.tenant;
@@ -106,6 +117,61 @@ export function M365Settings() {
         <Toggle label="Show Teams presence" hint="Green / red / amber dot on people in your organization, refreshed every 45 seconds while signed in." checked={m365.presence} onChange={(v) => void updateSettings({ m365: { ...m365, presence: v } })} />
         <Toggle label="Include Outlook contacts" hint="Also match people saved in your personal Outlook contacts, not just the company directory." checked={m365.includeOutlookContacts} onChange={(v) => void updateSettings({ m365: { ...m365, includeOutlookContacts: v } })} />
         <p className="text-xs text-muted-foreground">Sync never replaces a photo you set yourself. Tokens are stored encrypted on this PC only.</p>
+      </section>
+
+      <section className="space-y-4 rounded-xl border p-4">
+        <div className="flex items-center gap-2">
+          <Inbox className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-medium">Clients tab</p>
+        </div>
+        <Toggle
+          label="Find clients in my inbox"
+          hint="Every 15 minutes, reads Inbox and Sent Items and lists people outside the company who look like clients, newest first. The badge counts new clients since you last opened the tab."
+          checked={cl.enabled}
+          onChange={(v) => setCl({ enabled: v })}
+        />
+        <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
+          <p className="mb-1 font-medium text-foreground">Who counts as a client</p>
+          <ul className="list-disc space-y-0.5 pl-4">
+            <li>Never: coworkers, your lender list, no-reply senders, newsletters, calendar replies.</li>
+            <li>Always: anyone in Salesforce as a Contact or Lead{cl.useSalesforce ? (sfSignedIn ? "" : " (connect Salesforce to use this)") : " (off)"}.</li>
+            <li>Otherwise when two or more of these add up: they replied to your email, sent attachments, emailed more than once, or you've gone back and forth.</li>
+          </ul>
+        </div>
+        <Toggle label="Use Salesforce" hint="Anyone whose email is a Salesforce Contact or open Lead goes straight on the list." checked={cl.useSalesforce} onChange={(v) => setCl({ useSalesforce: v })} />
+        <div>
+          <Label className="mb-1.5 block text-xs text-muted-foreground">Lender list (never clients)</Label>
+          <textarea
+            value={lenders}
+            onChange={(e) => setLenders(e.target.value)}
+            onBlur={() => setCl({ lenderDomains: splitDomains(lenders) })}
+            rows={3}
+            placeholder="ondeck.com, kapitus.com, fundbox.com…"
+            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">Domains of contacts in a "Lenders" group are excluded automatically too.</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-[1fr_160px]">
+          <div>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">Company domains (coworkers)</Label>
+            <Input value={domains} onChange={(e) => setDomains(e.target.value)} onBlur={() => setCl({ internalDomains: splitDomains(domains) })} placeholder="Empty = your sign-in domain" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">Look back (days)</Label>
+            <Input type="number" min={7} max={180} defaultValue={cl.lookbackDays} onBlur={(e) => setCl({ lookbackDays: num(e.target.value, 7, 180, cl.lookbackDays) })} />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span className="flex-1">
+            {clients.lastScanAt ? `Last checked ${new Date(clients.lastScanAt).toLocaleString()} · ${clients.items.length} clients, ${clients.hiddenCount} removed` : "Not checked yet"}
+          </span>
+          <Button variant="outline" size="sm" disabled={!cl.enabled || !status.signedIn || clients.scanning} onClick={() => void window.contacts.scanClients()}>
+            <RefreshCw className={clients.scanning ? "animate-spin" : ""} /> Check inbox now
+          </Button>
+          <Button variant="ghost" size="sm" disabled={!clients.hiddenCount} onClick={() => void window.contacts.restoreHiddenClients().then((n) => showToast(n ? `Restored ${n} removed people` : "Nothing to restore"))}>
+            Restore removed
+          </Button>
+        </div>
       </section>
     </div>
   );

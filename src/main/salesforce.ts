@@ -268,6 +268,23 @@ export async function sfSync(): Promise<{ summary: SalesforceSyncSummary; status
   }
 }
 
+export function isSalesforceSignedIn(): boolean {
+  return status.signedIn;
+}
+
+/** Which of these emails exist in Salesforce as a Contact or an open Lead (lower-cased). */
+export async function salesforceEmailMatches(emails: string[]): Promise<Set<string>> {
+  const found = new Set<string>();
+  if (!emails.length || !(await loadTokens())) return found;
+  const unique = [...new Set(emails.map((e) => e.toLowerCase()))];
+  for (let i = 0; i < unique.length; i += 100) {
+    const chunk = unique.slice(i, i + 100).map(soqlStr).join(",");
+    for (const r of await soql<{ Email?: string }>(`SELECT Email FROM Contact WHERE Email IN (${chunk})`)) if (r.Email) found.add(r.Email.toLowerCase());
+    for (const r of await soql<{ Email?: string }>(`SELECT Email FROM Lead WHERE IsConverted = false AND Email IN (${chunk})`)) if (r.Email) found.add(r.Email.toLowerCase());
+  }
+  return found;
+}
+
 /** Live open deals for one linked contact (cached 5 min); also refreshes the row snapshot. */
 export async function sfDeals(contactId: string): Promise<SalesforceDeals> {
   const cached = dealsCache.get(contactId);

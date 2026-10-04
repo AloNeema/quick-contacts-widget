@@ -178,8 +178,88 @@ export interface DockSettings {
   height?: number;
 }
 
+export type ContactSort = "manual" | "name" | "recent" | "frequent";
+
+export interface ClientSettings {
+  enabled: boolean;
+  /** How far back to read Inbox and Sent Items; the list scrolls back this far. */
+  lookbackDays: number;
+  /** Your own company domains (never clients). Empty = your sign-in domain. */
+  internalDomains: string[];
+  /** Lender and partner domains (never clients). Domains of contacts in a "Lenders" group are added automatically. */
+  lenderDomains: string[];
+  /** Treat anyone whose email is a Salesforce Contact or Lead as a client. */
+  useSalesforce: boolean;
+}
+
+/** One message reduced to what client detection needs. */
+export interface MailMessageLite {
+  id: string;
+  conversationId?: string;
+  subject: string;
+  at: string;
+  direction: "in" | "out";
+  from?: { name?: string; address: string };
+  to: { name?: string; address: string }[];
+  hasAttachments?: boolean;
+  webLink?: string;
+  preview?: string;
+}
+
+/** Everything recent with one outside person, plus why they look like a client. */
+export interface ClientCandidate {
+  email: string;
+  name: string;
+  domain: string;
+  lastInboundAt?: string;
+  lastOutboundAt?: string;
+  /** Latest message either way; the list is sorted by this. */
+  lastActivityAt: string;
+  lastSubject: string;
+  lastPreview?: string;
+  lastDirection: "in" | "out";
+  webLink?: string;
+  inboundCount: number;
+  outboundCount: number;
+  /** Inbound messages that carried attachments. */
+  attachmentMessages: number;
+  /** They answered something you sent them. */
+  repliedToYou: boolean;
+}
+
+export type ClientReason = "salesforce" | "replied" | "attachments" | "repeat" | "conversation";
+
+export interface ClientItem extends ClientCandidate {
+  contactId?: string;
+  inSalesforce: boolean;
+  reasons: ClientReason[];
+  /** They wrote last. */
+  waitingOnYou: boolean;
+  /** Appeared since you last opened the Clients tab. */
+  isNew: boolean;
+}
+
+export interface ClientMark {
+  /** Hidden from the list; comes back only if they email again after this time. */
+  hiddenAt?: string;
+  /** "Not a client": never show again. */
+  notClient?: boolean;
+}
+
+export interface ClientsState {
+  items: ClientItem[];
+  newCount: number;
+  hiddenCount: number;
+  lastScanAt?: string;
+  scanning: boolean;
+  error?: string;
+}
+
 export interface Settings {
   schemaVersion: 1;
+  /** Order of the widget list. Pinned contacts always stay on top. */
+  sort: ContactSort;
+  clients: ClientSettings;
   /** Show the company website logo when a contact has no photo. */
   companyLogos: boolean;
   dock: DockSettings;

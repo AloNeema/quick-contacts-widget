@@ -22,6 +22,7 @@ import { applyHotkey } from "./hotkey";
 import { getContactContext, getPresence, refreshStatus, schedulePresence, signIn, signOut, syncContacts } from "./m365";
 import { checkForUpdates, getUpdateStatus, installUpdate, rescheduleUpdates, setUpdateToken } from "./updater";
 import { refreshLogos } from "./logos";
+import { addClientContact, contactsChangedForClients, getClientsState, markClient, markClientsViewed, rescheduleClients, restoreHiddenClients, scanClients } from "./clients";
 import { sfDeals, sfRefreshStatus, sfSignIn, sfSignOut, sfSync } from "./salesforce";
 
 const incomingSchema = z.object({
@@ -47,6 +48,7 @@ function notify(): void {
   const s = getState();
   broadcast(IPC.stateChanged, { settings: s.settings, contacts: s.contacts });
   refreshTrayMenu();
+  contactsChangedForClients();
 }
 
 /** Fetch logos for any new company domains in the background, then push the update. */
@@ -128,6 +130,7 @@ export function registerIpc(): void {
     if (patch.alwaysOnTop !== undefined && next.dock.enabled) getWidgetWindow()?.setAlwaysOnTop(true, "normal");
     if (patch.salesforce) await sfRefreshStatus();
     if (patch.companyLogos === true && !prev.companyLogos) refreshLogosSoon();
+    if (patch.clients) rescheduleClients();
     if (patch.m365) {
       await refreshStatus();
       schedulePresence();
@@ -210,7 +213,11 @@ export function registerIpc(): void {
   });
 
   ipcMain.handle(IPC.sfStatus, () => sfRefreshStatus());
-  ipcMain.handle(IPC.sfSignIn, () => sfSignIn());
+  ipcMain.handle(IPC.sfSignIn, async () => {
+    const r = await sfSignIn();
+    if (r.signedIn) void scanClients();
+    return r;
+  });
   ipcMain.handle(IPC.sfSignOut, () => sfSignOut());
   ipcMain.handle(IPC.sfSync, async () => {
     const r = await sfSync();
@@ -222,6 +229,19 @@ export function registerIpc(): void {
     notify();
     return r;
   });
+  ipcMain.handle(IPC.clientsGet, () => getClientsState());
+  ipcMain.handle(IPC.clientsScan, () => scanClients());
+  ipcMain.handle(IPC.clientsMark, (_e, rawEmail: unknown, rawAction: unknown) =>
+    markClient(z.string().email().parse(rawEmail), z.enum(["hide", "notClient", "restore"]).parse(rawAction)),
+  );
+  ipcMain.handle(IPC.clientsAddContact, async (_e, raw: unknown) => {
+    const saved = await addClientContact(z.string().email().parse(raw));
+    notify();
+    refreshLogosSoon();
+    return saved;
+  });
+  ipcMain.handle(IPC.clientsRestoreHidden, () => restoreHiddenClients());
+  ipcMain.handle(IPC.clientsViewed, () => markClientsViewed());
   ipcMain.handle(IPC.logosRefresh, async (_e, raw: unknown) => {
     const n = await refreshLogos({ force: z.boolean().parse(raw) });
     if (n > 0) notify();
@@ -243,7 +263,11 @@ export function registerIpc(): void {
   });
   ipcMain.handle(IPC.windowCloseSettings, () => getSettingsWindow()?.close());
   ipcMain.handle(IPC.m365Status, () => refreshStatus());
-  ipcMain.handle(IPC.m365SignIn, () => signIn());
+  ipcMain.handle(IPC.m365SignIn, async () => {
+    const s = await signIn();
+    if (s.signedIn) rescheduleClients();
+    return s;
+  });
   ipcMain.handle(IPC.m365SignOut, () => signOut());
   ipcMain.handle(IPC.m365Sync, async () => {
     const r = await syncContacts();

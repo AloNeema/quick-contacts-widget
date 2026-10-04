@@ -11,6 +11,8 @@ import { initM365 } from "./m365";
 import { initUpdater } from "./updater";
 import { initSalesforce } from "./salesforce";
 import { refreshLogos } from "./logos";
+import { initClients } from "./clients";
+import { setTrayBadge } from "./tray";
 import { broadcast } from "./windows";
 import { IPC } from "@shared/ipc";
 
@@ -40,6 +42,10 @@ if (!gotLock) {
     if (!applyHotkey(state.settings.hotkey)) console.warn("hotkey not registered:", state.settings.hotkey);
     initUpdater((s) => broadcast(IPC.updateStatusChanged, s));
     initSalesforce((s) => broadcast(IPC.sfStatusChanged, s));
+    void initClients((s) => {
+      broadcast(IPC.clientsChanged, s);
+      setTrayBadge(s.newCount);
+    });
     // Company logos in the background a few seconds after launch.
     setTimeout(() => {
       void refreshLogos()

@@ -1,4 +1,4 @@
-import type { Contact, IncomingContact, MergeOptions, MergeSummary } from "./types";
+import type { Contact, ContactSort, IncomingContact, MergeOptions, MergeSummary } from "./types";
 
 /** Stable hue for the initials avatar, derived from the name. */
 export function hueForName(name: string): number {
@@ -169,12 +169,28 @@ export function relativeTime(iso: string | undefined, now = Date.now()): string 
   return mo < 12 ? `${mo}mo ago` : `${Math.floor(mo / 12)}y ago`;
 }
 
-export function filterContacts(contacts: Contact[], query: string, group?: string): Contact[] {
+const byName = (a: Contact, b: Contact) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+const byRecent = (a: Contact, b: Contact) => (b.lastContactedAt ?? "").localeCompare(a.lastContactedAt ?? "");
+
+/** Pinned contacts stay on top; within each group apply the chosen order. */
+export function sortContacts(contacts: Contact[], sort: ContactSort = "manual"): Contact[] {
+  const ordered = normalizeOrder(contacts);
+  if (sort === "manual") return ordered;
+  const cmp =
+    sort === "name"
+      ? byName
+      : sort === "recent"
+        ? (a: Contact, b: Contact) => byRecent(a, b) || byName(a, b)
+        : (a: Contact, b: Contact) => (b.contactCount ?? 0) - (a.contactCount ?? 0) || byRecent(a, b) || byName(a, b);
+  return [...ordered].sort((a, b) => Number(b.pinned) - Number(a.pinned) || cmp(a, b));
+}
+
+export function filterContacts(contacts: Contact[], query: string, group?: string, sort: ContactSort = "manual"): Contact[] {
   const q = query.trim().toLowerCase();
   const scoped = group ? contacts.filter((c) => c.group?.trim() === group) : contacts;
-  if (!q) return normalizeOrder(scoped);
+  if (!q) return sortContacts(scoped, sort);
   const digits = q.replace(/\D/g, "");
-  return normalizeOrder(scoped).filter((c) =>
+  return sortContacts(scoped, sort).filter((c) =>
     [c.name, c.title, c.company, c.email, c.group, c.notes].some((v) => v?.toLowerCase().includes(q)) ||
     (digits.length >= 3 && c.phone?.includes(digits)),
   );

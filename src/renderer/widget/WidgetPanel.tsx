@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PanelLeftClose, PanelRightClose, Pin, PinOff, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
+import { ClientsList } from "./ClientsList";
+import { SortMenu } from "./SortMenu";
 import { filterContacts, groupsOf, recentContacts } from "@shared/merge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
 import { cn } from "@renderer/lib/utils";
@@ -41,6 +43,9 @@ export function WidgetPanel() {
   const dock = settings.dock;
   const [dockExpanded, setDockExpanded] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"contacts" | "clients">("contacts");
+  const clients = useContactsStore((s) => s.clients);
+  useEffect(() => window.contacts.onShowTab((t) => setTab(t)), []);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const expandDock = () => {
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
@@ -79,8 +84,9 @@ export function WidgetPanel() {
 
   const groups = useMemo(() => groupsOf(contacts), [contacts]);
   const activeGroup = group && groups.includes(group) ? group : undefined;
-  const visible = useMemo(() => filterContacts(contacts, query, activeGroup), [contacts, query, activeGroup]);
+  const visible = useMemo(() => filterContacts(contacts, query, activeGroup, settings.sort), [contacts, query, activeGroup, settings.sort]);
   const pinnedCount = visible.filter((c) => c.pinned).length;
+  const showPinnedDivider = pinnedCount > 0 && !query;
   const recents = useMemo(() => recentContacts(contacts, 6), [contacts]);
 
   if (dock.enabled && !dockExpanded) {
@@ -96,10 +102,31 @@ export function WidgetPanel() {
       <div className="glass-panel flex h-full w-full flex-col">
         {/* Header: the only drag region */}
         <header className={cn("relative z-10 flex items-center gap-2 px-3.5 pb-1.5 pt-3.5", dock.enabled ? "no-drag" : "drag")}>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="status-dot h-2 w-2 shrink-0 rounded-full" aria-hidden />
-            <h1 className="title-display truncate text-[14px] text-foreground/95">Contacts</h1>
-            <span className="text-[11px] tabular-nums text-muted-foreground">{contacts.length}</span>
+          <div className="flex min-w-0 flex-1 items-center gap-1" role="tablist">
+            <span className="status-dot mr-1 h-2 w-2 shrink-0 rounded-full" aria-hidden />
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "contacts"}
+              onClick={() => setTab("contacts")}
+              className={cn("no-drag title-display flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-[14px] transition-colors", tab === "contacts" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
+            >
+              Contacts <span className="text-[11px] tabular-nums text-muted-foreground">{contacts.length}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "clients"}
+              onClick={() => setTab("clients")}
+              className={cn("no-drag title-display flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-[14px] transition-colors", tab === "clients" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
+            >
+              Clients
+              {clients.newCount > 0 ? (
+                <span className="due-badge min-w-[18px] rounded-full px-1.5 text-center text-[10px] font-semibold leading-[18px] text-white" aria-label={`${clients.newCount} new`}>
+                  {clients.newCount}
+                </span>
+              ) : null}
+            </button>
           </div>
           <HeaderButton label={settings.alwaysOnTop ? "Unpin from top" : "Keep on top"} active={settings.alwaysOnTop} onClick={() => void window.contacts.toggleAlwaysOnTop()}>
             {settings.alwaysOnTop ? <Pin className="h-3.5 w-3.5 fill-current" /> : <PinOff className="h-3.5 w-3.5" />}
@@ -115,9 +142,13 @@ export function WidgetPanel() {
           </HeaderButton>
         </header>
 
+        {tab === "clients" ? (
+          <ClientsList photosBaseUrl={photosBaseUrl} compact={compact} />
+        ) : (
+        <>
         {/* Search */}
-        <div className="relative z-10 px-3 pb-2">
-          <div className="no-drag glass-inset relative rounded-xl">
+        <div className="relative z-30 flex items-center gap-1.5 px-3 pb-2">
+          <div className="no-drag glass-inset relative min-w-0 flex-1 rounded-xl">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               ref={searchRef}
@@ -138,6 +169,7 @@ export function WidgetPanel() {
               className="h-8 w-full rounded-xl bg-transparent pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground/80 focus:outline-none"
             />
           </div>
+          <SortMenu value={settings.sort} onChange={(sort) => void updateSettings({ sort })} />
         </div>
 
         {groups.length > 0 ? (
@@ -169,7 +201,7 @@ export function WidgetPanel() {
             <ul className="space-y-0.5">
               {visible.map((c, i) => (
                 <li key={c.id} className="contents">
-                  {i === pinnedCount && pinnedCount > 0 && !query ? (
+                  {i === pinnedCount && showPinnedDivider ? (
                     <div className="mx-2.5 my-1.5 h-px bg-foreground/10" role="separator" />
                   ) : null}
                   <ContactRow contact={c} photosBaseUrl={photosBaseUrl} compact={compact} open={openId === c.id} onToggle={() => setOpenId(openId === c.id ? null : c.id)} />
@@ -178,6 +210,8 @@ export function WidgetPanel() {
             </ul>
           )}
         </div>
+        </>
+        )}
 
         {toast ? (
           <div

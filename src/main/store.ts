@@ -54,6 +54,16 @@ export const contactSchema = z.object({
 export const settingsSchema = z.object({
   schemaVersion: z.literal(1),
   dialer: dialerSchema,
+  sort: z.enum(["manual", "name", "recent", "frequent"]).default("manual"),
+  clients: z
+    .object({
+      enabled: z.boolean(),
+      lookbackDays: z.number().int().min(7).max(180),
+      internalDomains: z.array(z.string().max(253)).max(50),
+      lenderDomains: z.array(z.string().max(253)).max(500),
+      useSalesforce: z.boolean(),
+    })
+    .default(DEFAULT_SETTINGS.clients),
   companyLogos: z.boolean().default(true),
   hotkey: z.string().max(80).default(DEFAULT_SETTINGS.hotkey),
   autoUpdate: z.boolean().default(true),

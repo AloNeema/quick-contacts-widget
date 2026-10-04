@@ -15,7 +15,7 @@ import {
   type TokenCacheContext,
 } from "@azure/msal-node";
 import { M365_SCOPES } from "@shared/defaults";
-import type { ContactContext, M365Status, M365SyncSummary, PresenceAvailability, PresenceMap } from "@shared/types";
+import type { MailMessageLite, ContactContext, M365Status, M365SyncSummary, PresenceAvailability, PresenceMap } from "@shared/types";
 import { getState, photosDir, setContacts } from "./store";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
@@ -351,6 +351,76 @@ export async function getContactContext(contactId: string): Promise<ContactConte
   }
   contextCache.set(contactId, result);
   return result;
+}
+
+// ---- Mail for client follow-ups ------------------------------------------
+
+export function isM365SignedIn(): boolean {
+  return status.signedIn;
+}
+
+interface GraphMailItem {
+  id: string;
+  conversationId?: string;
+  subject?: string;
+  receivedDateTime?: string;
+  sentDateTime?: string;
+  bodyPreview?: string;
+  webLink?: string;
+  inferenceClassification?: "focused" | "other";
+  hasAttachments?: boolean;
+  from?: { emailAddress?: { name?: string; address?: string } };
+  toRecipients?: { emailAddress?: { name?: string; address?: string } }[];
+  ccRecipients?: { emailAddress?: { name?: string; address?: string } }[];
+}
+
+type Party = { name?: string; address: string };
+const addr = (r?: { emailAddress?: { name?: string; address?: string } }): Party | undefined =>
+  r?.emailAddress?.address ? { name: r.emailAddress.name, address: r.emailAddress.address } : undefined;
+
+/** Your own addresses (primary, sign-in name, aliases) so they are never treated as clients. */
+export async function myMailAddresses(): Promise<string[]> {
+  const accessToken = await token();
+  if (!accessToken) return [];
+  const me = await graph<{ mail?: string; userPrincipalName?: string; proxyAddresses?: string[] }>(accessToken, "/me?$select=mail,userPrincipalName,proxyAddresses").catch(() => null);
+  const list = [me?.mail, me?.userPrincipalName, status.account?.username, ...(me?.proxyAddresses ?? []).map((p) => p.replace(/^smtp:/i, ""))];
+  return [...new Set(list.filter((v): v is string => Boolean(v && v.includes("@"))).map((v) => v.toLowerCase()))];
+}
+
+/** Inbox (Focused only when Focused Inbox is on) and Sent Items for the last N days, newest first, capped. */
+export async function fetchRecentMail(days: number, cap = 3000): Promise<MailMessageLite[]> {
+  const accessToken = await token();
+  if (!accessToken) throw new Error(status.lastError ?? "Sign in to Microsoft 365 first");
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const out: MailMessageLite[] = [];
+  const read = async (folder: "inbox" | "sentitems") => {
+    const dateField = folder === "inbox" ? "receivedDateTime" : "sentDateTime";
+    let url: string | null =
+      `/me/mailFolders/${folder}/messages?$filter=${dateField} ge ${since}&$orderby=${dateField} desc&$top=100` +
+      `&$select=id,conversationId,subject,${dateField},bodyPreview,webLink,hasAttachments,from,toRecipients,ccRecipients${folder === "inbox" ? ",inferenceClassification" : ""}`;
+    let taken = 0;
+    while (url && taken < cap) {
+      const page: { value: GraphMailItem[]; "@odata.nextLink"?: string } | null = await graph(accessToken, url);
+      if (!page) break;
+      for (const m of page.value) {
+        taken++;
+        if (folder === "inbox") {
+          if (m.inferenceClassification === "other") continue; // newsletters and bulk mail land in "Other"
+          const from = addr(m.from);
+          if (!from) continue;
+          out.push({ id: m.id, conversationId: m.conversationId, subject: m.subject ?? "", at: m.receivedDateTime!, direction: "in", from, to: [], hasAttachments: m.hasAttachments, webLink: m.webLink, preview: m.bodyPreview?.slice(0, 160) });
+        } else {
+          const to = [...(m.toRecipients ?? []), ...(m.ccRecipients ?? [])].map(addr).filter((v): v is Party => Boolean(v));
+          if (!to.length) continue;
+          out.push({ id: m.id, conversationId: m.conversationId, subject: m.subject ?? "", at: m.sentDateTime!, direction: "out", to, webLink: m.webLink, preview: m.bodyPreview?.slice(0, 160) });
+        }
+      }
+      url = page["@odata.nextLink"] ?? null;
+    }
+  };
+  await read("inbox");
+  await read("sentitems");
+  return out;
 }
 
 export function getPresence(): PresenceMap {
