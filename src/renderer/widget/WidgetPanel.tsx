@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PanelLeftClose, PanelRightClose, Pin, PinOff, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
-import { ClientsList } from "./ClientsList";
+import { ChevronRight, MoreHorizontal, PanelLeftClose, PanelRightClose, Pin, PinOff, Reply, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
+import { ClientsList, type ClientFilter } from "./ClientsList";
 import { SortMenu } from "./SortMenu";
 import { filterContacts, groupsOf, recentContacts } from "@shared/merge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
@@ -44,8 +44,23 @@ export function WidgetPanel() {
   const [dockExpanded, setDockExpanded] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [tab, setTab] = useState<"contacts" | "clients">("contacts");
+  const [clientFilter, setClientFilter] = useState<ClientFilter>("all");
   const clients = useContactsStore((s) => s.clients);
+  const m365SignedIn = useContactsStore((s) => s.m365.signedIn);
+  const waitingCount = clients.items.filter((i) => i.waitingOnYou).length;
   useEffect(() => window.contacts.onShowTab((t) => setTab(t)), []);
+  // Narrow widget: fold the secondary header toggles into a menu so the tabs never collide with them.
+  const [narrow, setNarrow] = useState(() => window.innerWidth < 330);
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < 330);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const openWaiting = () => {
+    setClientFilter("waiting");
+    setTab("clients");
+  };
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const expandDock = () => {
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
@@ -109,31 +124,52 @@ export function WidgetPanel() {
               role="tab"
               aria-selected={tab === "contacts"}
               onClick={() => setTab("contacts")}
-              className={cn("no-drag title-display flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-[14px] transition-colors", tab === "contacts" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
+              className={cn("no-drag title-display flex h-7 items-center gap-1.5 rounded-lg px-1.5 text-[14px] transition-colors", tab === "contacts" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
             >
-              Contacts <span className="text-[11px] tabular-nums text-muted-foreground">{contacts.length}</span>
+              Contacts {narrow ? null : <span className="text-[11px] tabular-nums text-muted-foreground">{contacts.length}</span>}
             </button>
             <button
               type="button"
               role="tab"
               aria-selected={tab === "clients"}
+              aria-label={clients.newCount ? `Clients, ${clients.newCount} new since you last looked` : "Clients"}
               onClick={() => setTab("clients")}
-              className={cn("no-drag title-display flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-[14px] transition-colors", tab === "clients" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
+              className={cn("no-drag title-display flex h-7 items-center gap-1.5 rounded-lg px-1.5 text-[14px] transition-colors", tab === "clients" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
             >
               Clients
               {clients.newCount > 0 ? (
-                <span className="due-badge min-w-[18px] rounded-full px-1.5 text-center text-[10px] font-semibold leading-[18px] text-white" aria-label={`${clients.newCount} new`}>
+                <span className="due-badge min-w-[18px] rounded-full px-1.5 text-center text-[11px] font-semibold leading-[18px] text-white" aria-hidden>
                   {clients.newCount}
                 </span>
               ) : null}
             </button>
           </div>
-          <HeaderButton label={settings.alwaysOnTop ? "Unpin from top" : "Keep on top"} active={settings.alwaysOnTop} onClick={() => void window.contacts.toggleAlwaysOnTop()}>
-            {settings.alwaysOnTop ? <Pin className="h-3.5 w-3.5 fill-current" /> : <PinOff className="h-3.5 w-3.5" />}
-          </HeaderButton>
-          <HeaderButton label={dock.enabled ? "Undock" : `Dock to ${dock.side} edge`} active={dock.enabled} onClick={toggleDock}>
-            {dock.side === "right" ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
-          </HeaderButton>
+          {narrow ? (
+            <div className="relative">
+              <HeaderButton label="More window options" active={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </HeaderButton>
+              {moreOpen ? (
+                <div role="menu" className="menu-glass no-drag absolute right-0 top-8 z-40 w-44 rounded-xl p-1 animate-fade-up" onMouseLeave={() => setMoreOpen(false)}>
+                  <button type="button" role="menuitem" className="menu-item" onClick={() => (setMoreOpen(false), void window.contacts.toggleAlwaysOnTop())}>
+                    {settings.alwaysOnTop ? <Pin className="h-3.5 w-3.5 fill-current" /> : <PinOff className="h-3.5 w-3.5" />} {settings.alwaysOnTop ? "Unpin from top" : "Keep on top"}
+                  </button>
+                  <button type="button" role="menuitem" className="menu-item" onClick={() => (setMoreOpen(false), toggleDock())}>
+                    {dock.side === "right" ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />} {dock.enabled ? "Undock" : `Dock to ${dock.side} edge`}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              <HeaderButton label={settings.alwaysOnTop ? "Unpin from top" : "Keep on top"} active={settings.alwaysOnTop} onClick={() => void window.contacts.toggleAlwaysOnTop()}>
+                {settings.alwaysOnTop ? <Pin className="h-3.5 w-3.5 fill-current" /> : <PinOff className="h-3.5 w-3.5" />}
+              </HeaderButton>
+              <HeaderButton label={dock.enabled ? "Undock" : `Dock to ${dock.side} edge`} active={dock.enabled} onClick={toggleDock}>
+                {dock.side === "right" ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+              </HeaderButton>
+            </>
+          )}
           <HeaderButton label="Settings" onClick={() => void window.contacts.openSettings()}>
             <Settings2 className="h-3.5 w-3.5" />
           </HeaderButton>
@@ -143,7 +179,7 @@ export function WidgetPanel() {
         </header>
 
         {tab === "clients" ? (
-          <ClientsList photosBaseUrl={photosBaseUrl} compact={compact} />
+          <ClientsList photosBaseUrl={photosBaseUrl} compact={compact} filter={clientFilter} onFilterChange={setClientFilter} />
         ) : (
         <>
         {/* Search */}
@@ -172,6 +208,20 @@ export function WidgetPanel() {
           <SortMenu value={settings.sort} onChange={(sort) => void updateSettings({ sort })} />
         </div>
 
+        {/* Answer "who's waiting on me?" from the first screen, and jump straight to those records. */}
+        {m365SignedIn && waitingCount > 0 && !query ? (
+          <div className="relative z-10 px-3 pb-2">
+            <button type="button" onClick={openWaiting} className="waiting-banner no-drag flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left">
+              <Reply className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+                {waitingCount} {waitingCount === 1 ? "client is" : "clients are"} waiting on your reply
+              </span>
+              <span className="flex shrink-0 items-center text-[12px] font-medium opacity-90">
+                Review <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            </button>
+          </div>
+        ) : null}
         {groups.length > 0 ? (
           <div className="no-drag relative z-10 flex gap-1.5 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[undefined, ...groups].map((g) => (
@@ -180,7 +230,7 @@ export function WidgetPanel() {
                 type="button"
                 onClick={() => setGroup(g)}
                 className={cn(
-                  "chip shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  "chip inline-flex h-7 shrink-0 items-center rounded-full px-2.5 text-[11px] font-medium transition-colors",
                   activeGroup === g ? "chip-active" : "text-muted-foreground hover:text-foreground",
                 )}
               >
