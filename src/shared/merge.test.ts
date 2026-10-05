@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createContact, filterContacts, hueForName, initialsOf, mergeContacts, moveContact, normalizeOrder, recentContacts, recordContactUse, groupsOf, relativeTime, sortContacts } from "./merge";
+import { applySyncChanges, createContact, filterContacts, hueForName, initialsOf, mergeContacts, moveContact, normalizeOrder, recentContacts, recordContactUse, groupsOf, relativeTime, sortContacts } from "./merge";
 import type { Contact } from "./types";
 
 const NOW = "2026-10-02T00:00:00.000Z";
@@ -132,5 +132,24 @@ describe("ordering and search", () => {
     expect(initialsOf("Cher")).toBe("CH");
     expect(hueForName("Jane Doe")).toBe(hueForName("jane doe"));
     expect(hueForName("Jane Doe")).toBeLessThan(360);
+  });
+});
+
+describe("applySyncChanges", () => {
+  const base = [createContact({ name: "Dana", email: "dana@x.com", title: "Owner" }, 0), createContact({ name: "Sam", email: "sam@y.com" }, 1)];
+  it("keeps edits, adds and deletes made while a sync ran", () => {
+    const snapshot = base;
+    const synced = snapshot.map((c) => ({ ...c, title: "CEO", company: "Bright" }));
+    const added = createContact({ name: "New", email: "new@z.com" }, 2);
+    // Meanwhile: Dana's title edited by hand, Sam deleted, a contact added.
+    const latest = [{ ...base[0], title: "Founder", notes: "call Tue" }, added];
+    const out = applySyncChanges(latest, snapshot, synced, ["title", "company"]);
+    expect(out.map((c) => c.name)).toEqual(["Dana", "New"]);
+    expect(out[0]).toMatchObject({ title: "Founder", company: "Bright", notes: "call Tue" });
+    expect(out[1]).toBe(added);
+  });
+  it("applies sync changes when nobody edited", () => {
+    const synced = base.map((c) => ({ ...c, title: "CEO" }));
+    expect(applySyncChanges(base, base, synced, ["title"]).map((c) => c.title)).toEqual(["CEO", "CEO"]);
   });
 });

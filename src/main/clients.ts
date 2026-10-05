@@ -8,7 +8,7 @@
 import { app } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { buildCandidates, computeClients, domainOf, excludedLenderDomains } from "@shared/clients";
+import { buildCandidates, computeClients, domainOf, excludedLenderDomains, stampFirstSeen } from "@shared/clients";
 import { createContact } from "@shared/merge";
 import type { ClientCandidate, ClientMark, ClientsState, Contact } from "@shared/types";
 import { fetchRecentMail, isM365SignedIn, myMailAddresses } from "./m365";
@@ -115,7 +115,7 @@ export async function scanClients(): Promise<ClientsState> {
     const firstScan = !data.lastScanAt;
     const now = new Date().toISOString();
     const { items } = computeClients(data.candidates, getState().contacts, data.marks, new Set(data.salesforce), data.firstSeen, data.lastViewedAt);
-    for (const i of items) if (!data.firstSeen[i.email]) data.firstSeen[i.email] = firstScan ? "" : now;
+    stampFirstSeen(data.firstSeen, items.map((i) => i.email), firstScan, now);
     if (firstScan) data.lastViewedAt = now;
     data.lastScanAt = now;
     lastError = undefined;

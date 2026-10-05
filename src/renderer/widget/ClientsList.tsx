@@ -74,7 +74,8 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   if (!cfg.enabled) {
     return <Empty title="Clients list is off" body="Turn it on in Settings › Microsoft 365." action={["Open settings", () => void window.contacts.openSettings("m365")]} />;
   }
-  if (!m365.signedIn) {
+  // Signed out with nothing cached: invite sign-in. With a cached list, keep showing it (with a banner below).
+  if (!m365.signedIn && state.items.length === 0) {
     return (
       <Empty
         title="Connect your inbox"
@@ -84,14 +85,15 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
     );
   }
 
-  const Row = ({ i }: { i: ClientItem }) => {
+  // A render function, not a component: a component defined here is a new type every render, so rows would remount and drop focus.
+  const renderRow = (i: ClientItem) => {
     const contact = i.contactId ? byId.get(i.contactId) : undefined;
     const call = contact && preferredPhone(contact, "call");
     const avatarContact: Contact = contact ?? { ...createContact({ name: i.name, email: i.email }, 0), id: `cl-${i.email}` };
     const [top, ...rest] = i.reasons;
     const why = i.reasons.map((r) => REASON[r].label).join(", ");
     return (
-      <li className={cn("contact-row group relative rounded-2xl px-2.5", compact ? "py-1.5" : "py-2", i.isNew && "client-new")}>
+      <li key={i.email} className={cn("contact-row group relative rounded-2xl px-2.5", compact ? "py-1.5" : "py-2", i.isNew && "client-new")}>
         <div className="flex items-start gap-3">
           <Avatar contact={avatarContact} photosBaseUrl={photosBaseUrl} size={compact ? 32 : 36} />
           <div className="min-w-0 flex-1">
@@ -220,7 +222,14 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
             ? `Last ${cfg.lookbackDays} days of email · checked ${relativeTime(state.lastScanAt)}${state.hiddenCount ? ` · ${state.hiddenCount} removed` : ""}`
             : "Not checked yet"}
       </p>
-      {state.error ? (
+      {!m365.signedIn ? (
+        <div role="alert" className="mx-3 mb-2 flex items-start gap-2 rounded-lg bg-red-500/15 px-2.5 py-1.5 text-[12px] text-red-100">
+          <span className="min-w-0 flex-1">Microsoft 365 needs you to sign in again. The list below is from the last successful check.</span>
+          <button type="button" className="shrink-0 font-medium underline underline-offset-2" onClick={() => void window.contacts.openSettings("m365")}>
+            Sign in
+          </button>
+        </div>
+      ) : state.error ? (
         <div role="alert" className="mx-3 mb-2 flex items-start gap-2 rounded-lg bg-red-500/15 px-2.5 py-1.5 text-[12px] text-red-100" title={state.error}>
           <span className="min-w-0 flex-1">{friendlyError(state.error)}</span>
           <button
@@ -246,9 +255,7 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
           )
         ) : (
           <ul className="space-y-1">
-            {visible.map((i) => (
-              <Row key={i.email} i={i} />
-            ))}
+            {visible.map((i) => renderRow(i))}
           </ul>
         )}
       </div>

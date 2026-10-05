@@ -27,14 +27,15 @@ export function ContactDetails({ contact }: { contact: Contact }) {
   const [ctx, setCtx] = useState<ContactContext | null>(null);
   const sfSignedIn = useContactsStore((s) => s.sf.signedIn);
   const [deals, setDeals] = useState<SalesforceDeals | null>(null);
+  const sfId = contact.sf?.id;
   useEffect(() => {
     let alive = true;
     setDeals(null);
-    if (contact.sf && sfSignedIn) window.contacts.sfDeals(contact.id).then((d) => alive && setDeals(d)).catch(() => undefined);
+    if (sfId && sfSignedIn) window.contacts.sfDeals(contact.id).then((d) => alive && setDeals(d)).catch(() => undefined);
     return () => {
       alive = false;
     };
-  }, [contact.id, contact.sf, sfSignedIn]);
+  }, [contact.id, sfId, sfSignedIn]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {

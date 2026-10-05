@@ -92,7 +92,9 @@ export function refreshLogos(opts: { force?: boolean; fetcher?: Fetcher } = {}):
             await fs.writeFile(path.join(photosDir(), fileName), png);
             idx[domain] = { fileName, fetchedAt: now };
           } else {
-            idx[domain] = { fetchedAt: now };
+            // A miss (site down, rate limit) keeps a logo we already have; it is retried on the next refresh.
+            const prev = idx[domain]?.fileName;
+            idx[domain] = prev ? { fileName: prev, fetchedAt: now } : { fetchedAt: now };
           }
         }),
       );

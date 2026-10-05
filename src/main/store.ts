@@ -13,6 +13,18 @@ const dialerSchema = z.object({
   smsTemplate: z.string(),
 });
 
+/** Field limits the saved file is validated against on load; setContacts clamps to them so nothing is dropped on restart. */
+export const CONTACT_LIMITS = { website: 300, group: 60, notes: 2000 } as const;
+
+function clampContact(c: Contact): Contact {
+  let next = c;
+  for (const [k, max] of Object.entries(CONTACT_LIMITS) as [keyof typeof CONTACT_LIMITS, number][]) {
+    const v = next[k];
+    if (typeof v === "string" && v.length > max) next = { ...next, [k]: v.slice(0, max) };
+  }
+  return next;
+}
+
 export const contactSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -24,10 +36,10 @@ export const contactSchema = z.object({
   defaultTextPhone: z.enum(["office", "cell"]).optional(),
   email: z.string().optional(),
   linkedinUrl: z.string().optional(),
-  website: z.string().max(300).optional(),
+  website: z.string().max(CONTACT_LIMITS.website).optional(),
   logo: z.object({ domain: z.string(), fileName: z.string() }).optional(),
-  group: z.string().max(60).optional(),
-  notes: z.string().max(2000).optional(),
+  group: z.string().max(CONTACT_LIMITS.group).optional(),
+  notes: z.string().max(CONTACT_LIMITS.notes).optional(),
   m365: z.object({ kind: z.enum(["user", "contact"]), id: z.string(), syncedAt: z.string() }).optional(),
   sf: z
     .object({
@@ -170,7 +182,7 @@ export function saveState(): Promise<void> {
 
 export async function setContacts(contacts: Contact[]): Promise<Contact[]> {
   const s = getState();
-  s.contacts = normalizeOrder(contacts);
+  s.contacts = normalizeOrder(contacts.map(clampContact));
   await saveState();
   return s.contacts;
 }

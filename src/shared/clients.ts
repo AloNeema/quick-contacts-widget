@@ -11,9 +11,12 @@
  */
 import type { ClientCandidate, ClientItem, ClientMark, ClientReason, Contact, MailMessageLite } from "./types";
 
+// Small-business owners often write from info@, sales@, hello@, admin@ or team@, so those
+// shared mailboxes stay eligible; bulk mail from them is still caught by the score and BULK_PREVIEW.
 const AUTOMATED_LOCAL =
-  /^(no-?reply|do-?not-?reply|donotreply|notifications?|notify|alerts?|mailer(-daemon)?|bounces?|news(letter)?s?|marketing|promo(tions)?|updates?|digest|billing|receipts?|invoices?|postmaster|support|help|hello|info|team|admin|calendar|accounts?|security|service|feedback|reply|automated|system|sales|events?|webinars?|community)$/i;
-const AUTOMATED_SUBJECT = /^(accepted|declined|tentative|canceled|cancelled|updated invitation|invitation|automatic reply|auto(matic)?[- ]?reply|out of office|undeliverable|delivery status notification|read:)\b/i;
+  /^(no-?reply|do-?not-?reply|donotreply|notifications?|notify|alerts?|mailer(-daemon)?|bounces?|news(letter)?s?|marketing|promo(tions)?|updates?|digest|billing|receipts?|invoices?|postmaster|support|help|calendar|security|feedback|reply|automated|system|events?|webinars?|community)$/i;
+// "read:" ends in punctuation, so it sits outside the \b group (a \b after ":" needs a letter next).
+const AUTOMATED_SUBJECT = /^(?:(?:accepted|declined|tentative|canceled|cancelled|updated invitation|invitation|automatic reply|auto(?:matic)?[- ]?reply|out of office|undeliverable|delivery status notification)\b|read:)/i;
 const BULK_PREVIEW = /\b(unsubscribe|view (this email )?in (your )?browser|manage (your )?(email )?preferences|you are receiving this)\b/i;
 const REPLY_SUBJECT = /^\s*(re|aw|sv|antw)\s*:/i;
 
@@ -130,6 +133,12 @@ export function isClient(c: ClientCandidate, inSalesforce: boolean): boolean {
  * The Clients tab: newest contact first. Hidden people come back only if
  * they email again after you hid them; "not a client" never comes back.
  */
+/** Stamp first-seen for people newly on the list; the first scan seeds "" so the badge starts at zero. */
+export function stampFirstSeen(firstSeen: Record<string, string>, emails: string[], firstScan: boolean, now: string): void {
+  // Check the key, not the value: seeded entries hold "" and must not be re-stamped as new.
+  for (const e of emails) if (!Object.hasOwn(firstSeen, e)) firstSeen[e] = firstScan ? "" : now;
+}
+
 export function computeClients(
   candidates: ClientCandidate[],
   contacts: Contact[],

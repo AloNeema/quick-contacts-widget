@@ -8,6 +8,7 @@ import { app, safeStorage, shell } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import {
+  InteractionRequiredAuthError,
   PublicClientApplication,
   type AccountInfo,
   type AuthenticationResult,
@@ -15,6 +16,7 @@ import {
   type TokenCacheContext,
 } from "@azure/msal-node";
 import { M365_SCOPES } from "@shared/defaults";
+import { applySyncChanges } from "@shared/merge";
 import type { MailMessageLite, ContactContext, M365Status, M365SyncSummary, PresenceAvailability, PresenceMap } from "@shared/types";
 import { getState, photosDir, setContacts } from "./store";
 
@@ -140,8 +142,11 @@ async function token(): Promise<string | null> {
     const r: AuthenticationResult = await c.acquireTokenSilent({ account, scopes: M365_SCOPES });
     return r.accessToken;
   } catch (err) {
-    setStatus({ signedIn: false, lastError: "Session expired, please sign in again." });
     console.warn("acquireTokenSilent failed", err);
+    // Only an expired or revoked session means signed out. A network blip or service error keeps
+    // the account so cached lists (like Clients) stay visible and the next call can retry.
+    if (err instanceof InteractionRequiredAuthError) setStatus({ signedIn: false, lastError: "Session expired, please sign in again." });
+    else setStatus({ lastError: "Couldn't reach Microsoft 365 just now. Will retry." });
     return null;
   }
 }
@@ -178,7 +183,8 @@ export async function syncContacts(): Promise<{ summary: M365SyncSummary; status
   if (!accessToken) return { summary, status: setStatus({ lastError: status.lastError ?? "Not signed in." }) };
 
   const { includeOutlookContacts } = getState().settings.m365;
-  const contacts = getState().contacts.map((c) => ({ ...c }));
+  const snapshot = getState().contacts;
+  const contacts = snapshot.map((c) => ({ ...c }));
   const now = new Date().toISOString();
   await fs.mkdir(photosDir(), { recursive: true });
 
@@ -209,7 +215,8 @@ export async function syncContacts(): Promise<{ summary: M365SyncSummary; status
     try {
       const users = await graph<{ value: GraphUser[] }>(
         accessToken,
-        `/users?$filter=mail eq '${esc(c.email)}' or userPrincipalName eq '${esc(c.email)}'&$select=id,displayName,jobTitle,companyName,mail,userPrincipalName`,
+        // Encode the filter: a raw "+" in an address (nick+deals@...) would be read as a space.
+        `/users?$filter=${encodeURIComponent(`mail eq '${esc(c.email)}' or userPrincipalName eq '${esc(c.email)}'`)}&$select=id,displayName,jobTitle,companyName,mail,userPrincipalName`,
       );
       const u = users?.value[0];
       if (u) {
@@ -262,7 +269,8 @@ export async function syncContacts(): Promise<{ summary: M365SyncSummary; status
     }
   }
 
-  await setContacts(contacts);
+  // Merge into the latest list: edits made while the sync ran are kept.
+  await setContacts(applySyncChanges(getState().contacts, snapshot, contacts, ["title", "company", "m365", "photo", "updatedAt"]));
   const next = setStatus({ lastSyncAt: now, lastError: undefined });
   schedulePresence();
   void pollPresence();
