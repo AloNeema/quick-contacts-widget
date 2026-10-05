@@ -1,4 +1,6 @@
 import { app, BrowserWindow } from "electron";
+import path from "node:path";
+import { mkdirSync } from "node:fs";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { getState as loadedState, loadState } from "./store";
 import { handlePhotoScheme, registerPhotoScheme } from "./photos";
@@ -15,6 +17,15 @@ import { initClients } from "./clients";
 import { setTrayBadge } from "./tray";
 import { broadcast } from "./windows";
 import { IPC } from "@shared/ipc";
+import { talkdeskHandoff } from "./talkdesk";
+
+// Preview builds have their own contacts/settings so testing a new provider cannot
+// make a stable build discard settings it does not yet understand.
+if (app.getVersion().includes("-")) {
+  const previewData = path.join(app.getPath("appData"), "QCF Contacts Preview");
+  mkdirSync(previewData, { recursive: true });
+  app.setPath("userData", previewData);
+}
 
 registerPhotoScheme();
 
@@ -72,5 +83,5 @@ if (!gotLock) {
   app.on("before-quit", () => {
     (global as { __quitting?: boolean }).__quitting = true;
   });
-  app.on("will-quit", () => releaseHotkey());
+  app.on("will-quit", () => { releaseHotkey(); void talkdeskHandoff.close(); });
 }

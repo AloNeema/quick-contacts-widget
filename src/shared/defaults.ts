@@ -1,6 +1,12 @@
 import type { Appearance, DialerProvider, ClientSettings, M365Settings, SalesforceSettings, Settings } from "./types";
 
 export const DIALER_PRESETS: Record<Exclude<DialerProvider["id"], "custom">, DialerProvider> = {
+  talkdesk: {
+    id: "talkdesk",
+    label: "Talkdesk pilot (Chrome)",
+    callTemplate: "",
+    smsTemplate: "",
+  },
   ringcentral: {
     id: "ringcentral",
     label: "RingCentral app",

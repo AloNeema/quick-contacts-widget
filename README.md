@@ -4,6 +4,10 @@ A transparent, frameless Windows widget that floats on your desktop with your ke
 
 ![icon](resources/icon.png)
 
+## Talkdesk preview
+
+Version 0.1.4-beta.1 adds an opt-in **Talkdesk pilot** under Settings → Call & Text. Calls open a temporary Chrome page for Talkdesk's Click-to-Call extension; **Copy for text** copies the preferred texting number for pasting into Talkdesk SMS. These actions do not update contact history. Preview builds use a separate **QCF Contacts Preview** data folder; import sample contacts to try them. See [pilot setup and validation status](docs/TALKDESK-PILOT.md).
+
 ## What it does
 
 - Glass panel you drag anywhere; remembers position and size; hides to the tray instead of closing; optional *Keep on top* and *Start with Windows*.

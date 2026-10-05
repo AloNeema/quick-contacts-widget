@@ -26,6 +26,7 @@ export function fillPhoneTemplate(template: string, e164: string): string {
  * allowlist, or match the scheme the user put in a custom template.
  */
 export function buildDialUri(provider: DialerProvider, action: DialAction, e164: string): string {
+  if (provider.id === "talkdesk") throw new DialerError("Talkdesk uses the Chrome handoff, not a dialing link");
   const template = action === "call" ? provider.callTemplate : provider.smsTemplate;
   if (!template.includes("{e164}") && !template.includes("{digits}") && !template.includes("{national}")) {
     throw new DialerError("Dialer template must contain {e164}, {digits} or {national}");

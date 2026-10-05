@@ -76,7 +76,7 @@ export interface ContactsApi {
   deletePhoto(contactId: string): Promise<Contact[]>;
   pickImportFile(): Promise<ImportFile | null>;
   applyImport(incoming: IncomingContact[], options: MergeOptions): Promise<{ contacts: Contact[]; summary: MergeSummary }>;
-  dial(req: DialRequest): Promise<{ ok: true } | { ok: false; error: string }>;
+  dial(req: DialRequest): Promise<{ ok: true; message?: string } | { ok: false; error: string }>;
   email(address: string, contactId?: string): Promise<{ ok: true } | { ok: false; error: string }>;
   openLink(url: string): Promise<{ ok: true } | { ok: false; error: string }>;
   resizeBy(dx: number, dy: number): Promise<void>;

@@ -202,7 +202,7 @@ export function WidgetPanel() {
                   const action = e.altKey ? "sms" : "call";
                   const number = preferredPhone(c, action);
                   if (e.shiftKey && c.email) void window.contacts.email(c.email, c.id).then((r) => !r.ok && showToast(r.error, "error"));
-                  else if (number) void window.contacts.dial({ action, phone: number.phone, contactId: c.id }).then((r) => !r.ok && showToast(r.error, "error"));
+                  else if (number) void window.contacts.dial({ action, phone: number.phone, contactId: c.id }).then((r) => { if (!r.ok) showToast(r.error, "error"); else if (r.message) showToast(r.message); });
                   else if (c.email) void window.contacts.email(c.email, c.id).then((r) => !r.ok && showToast(r.error, "error"));
                 }
               }}

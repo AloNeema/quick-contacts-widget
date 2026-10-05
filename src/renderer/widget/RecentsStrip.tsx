@@ -11,7 +11,7 @@ export function RecentsStrip({ contacts, photosBaseUrl }: { contacts: Contact[];
   const presence = useContactsStore((s) => s.presence);
 
   const act = async (c: Contact, e: React.MouseEvent) => {
-    const run = (p: Promise<{ ok: true } | { ok: false; error: string }>) => p.then((r) => !r.ok && showToast(r.error, "error"));
+    const run = (p: Promise<{ ok: true; message?: string } | { ok: false; error: string }>) => p.then((r) => { if (!r.ok) showToast(r.error, "error"); else if (r.message) showToast(r.message); });
     if (e.shiftKey && c.email) return run(window.contacts.email(c.email, c.id));
     const action = e.altKey ? "sms" : "call";
     const number = preferredPhone(c, action);
