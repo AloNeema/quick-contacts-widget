@@ -6,7 +6,7 @@ A transparent, frameless Windows widget that floats on your desktop with your ke
 
 ## Talkdesk preview
 
-Version 0.1.4-beta.1 adds an opt-in **Talkdesk pilot** under Settings → Call & Text. Calls open a temporary Chrome page for Talkdesk's Click-to-Call extension; **Copy for text** copies the preferred texting number for pasting into Talkdesk SMS. These actions do not update contact history. Preview builds use a separate **QCF Contacts Preview** data folder; import sample contacts to try them. See [pilot setup and validation status](docs/TALKDESK-PILOT.md).
+Version 0.1.4-beta.2 simplifies **Talkdesk** to **Copy for call** and **Copy for text**. Paste the starred number into Workspace Desktop. No browser page is opened and copying does not update contact history. Settings → General now includes **Save backup**, **Restore backup**, automatic checkpoints and **Copy setup from regular app** in previews. Backups preserve Microsoft app ID/tenant, Salesforce consumer key, contacts, preferences, images and Clients hide/not-client choices. Sign-ins and the updater token are not exported. Preview builds use a separate **QCF Contacts Preview** profile and are updated manually. See [setup and testing](docs/TALKDESK-PILOT.md).
 
 ## What it does
 

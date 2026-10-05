@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, dialog } from "electron";
 import path from "node:path";
 import { mkdirSync } from "node:fs";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
@@ -17,15 +17,15 @@ import { initClients } from "./clients";
 import { setTrayBadge } from "./tray";
 import { broadcast } from "./windows";
 import { IPC } from "@shared/ipc";
-import { talkdeskHandoff } from "./talkdesk";
+import { applyPendingRestore, automaticBackup } from "./backup";
+import { setBackupError } from "./backupActions";
 
 // Preview builds have their own contacts/settings so testing a new provider cannot
 // make a stable build discard settings it does not yet understand.
-if (app.getVersion().includes("-")) {
-  const previewData = path.join(app.getPath("appData"), "QCF Contacts Preview");
-  mkdirSync(previewData, { recursive: true });
-  app.setPath("userData", previewData);
-}
+const profileName = !app.isPackaged ? "QCF Contacts Development" : app.getVersion().includes("-") ? "QCF Contacts Preview" : "QCF Contacts";
+const profileData = path.join(app.getPath("appData"), profileName);
+mkdirSync(profileData, { recursive: true });
+app.setPath("userData", profileData);
 
 registerPhotoScheme();
 
@@ -44,7 +44,10 @@ if (!gotLock) {
     if (process.platform === "darwin") app.dock?.hide();
     app.on("browser-window-created", (_, window) => optimizer.watchWindowShortcuts(window));
 
+    await applyPendingRestore(app.getPath("userData"), app.getVersion());
     const state = await loadState();
+    try { await automaticBackup(app.getPath("userData"), app.getVersion(), state); }
+    catch (error) { setBackupError(error); }
     handlePhotoScheme();
     registerIpc();
     createTray();
@@ -76,6 +79,9 @@ if (!gotLock) {
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWidgetWindow();
     });
+  }).catch((error) => {
+    dialog.showErrorBox("QCF Contacts could not load your setup", `${error instanceof Error ? error.message : String(error)}\n\nSaved files: ${app.getPath("userData")}`);
+    app.quit();
   });
 
   // Tray app: closing windows must not quit.
@@ -83,5 +89,5 @@ if (!gotLock) {
   app.on("before-quit", () => {
     (global as { __quitting?: boolean }).__quitting = true;
   });
-  app.on("will-quit", () => { releaseHotkey(); void talkdeskHandoff.close(); });
+  app.on("will-quit", () => { releaseHotkey(); });
 }

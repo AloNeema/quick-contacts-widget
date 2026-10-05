@@ -32,7 +32,7 @@ export function QuickActions({ contact, compact }: { contact: Contact; compact?:
 
   return (
     <div className={compact ? "flex items-center gap-1 [&_.action-btn]:h-7 [&_.action-btn]:w-7" : "flex items-center gap-1"}>
-      <Action label={call ? `${talkdesk ? "Open Talkdesk calling page" : "Call"} ${call.label}: ${formatPhoneForDisplay(call.phone)}` : "No phone"} disabled={!call} onClick={() => call && void run(window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }))}>
+      <Action label={call ? `${talkdesk ? "Copy for call" : "Call"} ${call.label}: ${formatPhoneForDisplay(call.phone)}` : "No phone"} disabled={!call} onClick={() => call && void run(window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }))}>
         <Phone className={iconClass} />
       </Action>
       <Action label={text ? `${talkdesk ? "Copy for text" : "Text"} ${text.label}: ${formatPhoneForDisplay(text.phone)}` : "No phone"} disabled={!text} onClick={() => text && void run(window.contacts.dial({ action: "sms", phone: text.phone, contactId: contact.id }))}>

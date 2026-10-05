@@ -113,7 +113,7 @@ export const settingsSchema = z.object({
 
 export const settingsPatchSchema = settingsSchema.partial().omit({ schemaVersion: true });
 
-const stateSchema = z.object({
+export const stateSchema = z.object({
   settings: settingsSchema,
   contacts: z.array(contactSchema),
 });
@@ -127,6 +127,7 @@ export function photosDir(): string {
 }
 
 let state: PersistedState | null = null;
+let recoveryWriteBlocked = false;
 
 function freshState(): PersistedState {
   return { settings: structuredClone(DEFAULT_SETTINGS), contacts: [] };
@@ -149,15 +150,42 @@ export async function loadState(): Promise<PersistedState> {
             return recovered.success ? [recovered.data] : [];
           })
         : [];
-      const parsedSettings = settingsSchema.safeParse(loose.settings);
-      const settings = parsedSettings.success ? parsedSettings.data : structuredClone(DEFAULT_SETTINGS);
+      // A bad field must not clear unrelated integration IDs and preferences.
+      const settings = structuredClone(DEFAULT_SETTINGS);
+      if (loose.settings && typeof loose.settings === "object") {
+        for (const key of Object.keys(settingsSchema.shape) as (keyof Settings)[]) {
+          const field = settingsSchema.shape[key].safeParse(loose.settings[key]);
+          if (field.success && field.data !== undefined) Object.assign(settings, { [key]: field.data });
+          else {
+            // Recover known subfields independently (for example a valid app ID
+            // alongside an invalid tenant) instead of discarding the whole group.
+            let schema: z.ZodTypeAny = settingsSchema.shape[key];
+            if (schema instanceof z.ZodDefault) schema = schema.removeDefault();
+            const raw = loose.settings[key];
+            if (schema instanceof z.ZodObject && raw && typeof raw === "object") {
+              const recovered = { ...(settings[key] as object) };
+              for (const [subkey, subschema] of Object.entries(schema.shape) as [string, z.ZodTypeAny][]) {
+                const sub = subschema.safeParse((raw as unknown as Record<string, unknown>)[subkey]);
+                if (sub.success && sub.data !== undefined) Object.assign(recovered, { [subkey]: sub.data });
+              }
+              const checked = schema.safeParse(recovered);
+              if (checked.success) Object.assign(settings, { [key]: checked.data });
+            }
+          }
+        }
+      }
       state = { settings, contacts };
       // Keep the full original text before persisting repaired fields. If backup fails,
       // show the recovered contacts in memory but leave the original file untouched.
       const backedUp = await fs.copyFile(statePath(), `${statePath()}.corrupt-${Date.now()}`).then(() => true, () => false);
+      recoveryWriteBlocked = !backedUp;
       if (backedUp) await saveState();
     }
-  } catch {
+  } catch (error) {
+    state = null;
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw new Error("Your saved setup could not be read. It has been left in place; the app will close to protect it.", { cause: error });
+    }
     state = freshState();
   }
   // Presets may evolve; refresh non-custom dialers from the current table.
@@ -176,8 +204,9 @@ let writing: Promise<void> = Promise.resolve();
 
 /** Atomic write: temp file in the same dir, then rename over the real file. */
 export function saveState(): Promise<void> {
+  if (recoveryWriteBlocked) return Promise.reject(new Error("The original setup could not be backed up. Save a backup from Settings before repairing the file permissions and restarting."));
   const snapshot = JSON.stringify(getState(), null, 2);
-  writing = writing.then(async () => {
+  writing = writing.catch(() => undefined).then(async () => {
     const target = statePath();
     await fs.mkdir(path.dirname(target), { recursive: true });
     const tmp = `${target}.${process.pid}.tmp`;

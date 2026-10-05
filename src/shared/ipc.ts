@@ -1,6 +1,8 @@
 import type { ClientsState, Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, UpdateStatus } from "./types";
 
 export const IPC = {
+  backupStatus: "backup:status",
+  backupAction: "backup:action",
   stateGet: "state:get",
   contactsSave: "contacts:save",
   contactsReorder: "contacts:reorder",
@@ -64,6 +66,8 @@ export interface DialRequest {
 
 /** API exposed on window.contacts by the preload script. */
 export interface ContactsApi {
+  backupStatus(): Promise<{ preview: boolean; error?: string }>;
+  backupAction(action: "save" | "restore" | "regular" | "folder"): Promise<{ message?: string }>;
   getState(): Promise<{ settings: Settings; contacts: Contact[]; photosBaseUrl: string; platform: string; version: string }>;
   saveContacts(contacts: Contact[]): Promise<Contact[]>;
   reorderContact(id: string, targetId: string, side: "before" | "after", sort: Settings["sort"]): Promise<{ contacts: Contact[]; settings: Settings }>;
