@@ -13,7 +13,8 @@ export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
   title: "Title",
   company: "Company",
   email: "Email",
-  phone: "Phone",
+  phone: "Office phone",
+  mobilePhone: "Cell phone",
   linkedinUrl: "LinkedIn URL",
   photoUrl: "Photo URL",
   website: "Website",
@@ -49,6 +50,7 @@ function fieldFromHeader(h: string): ImportField | null {
   if (/^(group|tag|tags|category|type|segment|list)$/.test(s) || /\b(group|tag|category)\b/.test(s)) return "group";
   if (/(note|notes|comment|comments|remarks)/.test(s)) return "notes";
   if (/e-?mail/.test(s)) return "email";
+  if (/(mobile|cell)/.test(s)) return "mobilePhone";
   if (/(phone|mobile|cell|tel|direct|number)/.test(s)) return "phone";
   if (/^(first|first name|given( name)?|fname)$/.test(s) || /\bfirst\b/.test(s)) return "firstName";
   if (/^(last|last name|surname|family( name)?|lname)$/.test(s) || /\blast\b/.test(s)) return "lastName";
@@ -118,7 +120,7 @@ export function guessHeaderMapping(rows: string[][]): { mapping: ImportField[]; 
       mapping[mapping.indexOf("name")] = used.has("company") ? "ignore" : "company";
     }
     const dataRows = rows.slice(1);
-    const hasKey = mapping.some((f) => f === "email" || f === "phone");
+    const hasKey = mapping.some((f) => f === "email" || f === "phone" || f === "mobilePhone");
     if (!hasKey) {
       // Header words were unhelpful; let the values fill the gaps.
       const byValues = guessMappingFromValues(dataRows);
@@ -136,7 +138,7 @@ export function guessHeaderMapping(rows: string[][]): { mapping: ImportField[]; 
 
 export function mappingHasRequiredFields(mapping: ImportField[]): boolean {
   const hasName = mapping.includes("name") || mapping.includes("firstName") || mapping.includes("lastName");
-  const hasKey = mapping.includes("email") || mapping.includes("phone");
+  const hasKey = mapping.includes("email") || mapping.includes("phone") || mapping.includes("mobilePhone");
   return hasName && hasKey;
 }
 
@@ -159,6 +161,7 @@ export function buildIncomingContacts(dataRows: string[][], mapping: ImportField
   const iCompany = col("company");
   const iEmail = col("email");
   const iPhone = col("phone");
+  const iMobile = col("mobilePhone");
   const iLinkedin = col("linkedinUrl");
   const iPhoto = col("photoUrl");
   const iWebsite = col("website");
@@ -183,7 +186,8 @@ export function buildIncomingContacts(dataRows: string[][], mapping: ImportField
     name = titleCase(name.replace(/\s+/g, " ").trim());
     const email = normalizeEmail(cell(row, iEmail));
     const phone = normalizeUsPhone(cell(row, iPhone));
-    if (!name || (!email && !phone)) {
+    const mobilePhone = normalizeUsPhone(cell(row, iMobile));
+    if (!name || (!email && !phone && !mobilePhone)) {
       skipped++;
       continue;
     }
@@ -195,6 +199,7 @@ export function buildIncomingContacts(dataRows: string[][], mapping: ImportField
       company: cell(row, iCompany) || undefined,
       email: email || undefined,
       phone: phone || undefined,
+      mobilePhone: mobilePhone || undefined,
       linkedinUrl: URL_RE.test(linkedinUrl) ? linkedinUrl : linkedinUrl ? `https://${linkedinUrl.replace(/^\/+/, "")}` : undefined,
       photoUrl: URL_RE.test(photoUrl) ? photoUrl : undefined,
       website: cell(row, iWebsite) || undefined,

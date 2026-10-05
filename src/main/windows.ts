@@ -4,6 +4,7 @@ import { is } from "@electron-toolkit/utils";
 import { DOCK_STRIP_WIDTH, WIDGET_DEFAULT_SIZE, WIDGET_MIN_SIZE } from "@shared/defaults";
 import type { WindowBounds } from "@shared/types";
 import { getState, patchSettings } from "./store";
+import { windowIcon } from "./icons";
 
 let widgetWindow: BrowserWindow | null = null;
 let settingsWindow: BrowserWindow | null = null;
@@ -97,6 +98,7 @@ export function createWidgetWindow(opts: { startHidden?: boolean } = {}): Browse
     skipTaskbar: true,
     alwaysOnTop: settings.alwaysOnTop || settings.dock.enabled,
     title: "QCF Contacts",
+    icon: windowIcon(),
     ...(settings.appearance.acrylic && process.platform === "win32" ? { backgroundMaterial: "acrylic" as const } : {}),
     ...(settings.appearance.acrylic && process.platform === "darwin"
       ? { vibrancy: (settings.appearance.theme === "light" ? "popover" : "hud") as "popover" | "hud", visualEffectState: "active" as const }
@@ -207,6 +209,7 @@ export function createSettingsWindow(tab?: string): BrowserWindow {
     minHeight: 520,
     show: false,
     title: "QCF Contacts – Settings",
+    icon: windowIcon(),
     autoHideMenuBar: true,
     backgroundColor: settings.appearance.theme === "light" ? "#f6f7fb" : "#0f1115",
     webPreferences: {

@@ -25,7 +25,7 @@ describe("guessHeaderMapping", () => {
     ];
     const { mapping, dataRows, hadHeader } = guessHeaderMapping(rows);
     expect(hadHeader).toBe(true);
-    expect(mapping).toEqual(["name", "title", "company", "email", "phone", "linkedinUrl"]);
+    expect(mapping).toEqual(["name", "title", "company", "email", "mobilePhone", "linkedinUrl"]);
     expect(dataRows).toHaveLength(2);
   });
   it("prefers First + Last over an Account Name column", () => {
@@ -52,6 +52,22 @@ describe("guessHeaderMapping", () => {
 });
 
 describe("buildIncomingContacts", () => {
+  it("imports office and cell columns separately, including cell-only contacts", () => {
+    const rows = [
+      ["Name", "Office Phone", "Cell Phone"],
+      ["Jane Doe", "(202) 555-0101", "202-555-0102"],
+      ["John Roe", "", "202-555-0103"],
+    ];
+    const { mapping, dataRows } = guessHeaderMapping(rows);
+    expect(mapping).toEqual(["name", "phone", "mobilePhone"]);
+    expect(mappingHasRequiredFields(["name", "mobilePhone"])).toBe(true);
+    const result = buildIncomingContacts(dataRows, mapping);
+    expect(result.skipped).toBe(0);
+    expect(result.contacts).toEqual([
+      expect.objectContaining({ name: "Jane Doe", phone: "+12025550101", mobilePhone: "+12025550102" }),
+      expect.objectContaining({ name: "John Roe", phone: undefined, mobilePhone: "+12025550103" }),
+    ]);
+  });
   it("normalizes names, emails and phones and skips rows without a key", () => {
     const mapping = ["firstName", "lastName", "email", "phone", "title"] as const;
     const rows = [

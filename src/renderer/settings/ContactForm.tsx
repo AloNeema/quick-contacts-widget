@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { ImagePlus, Link2, Trash2, Upload } from "lucide-react";
-import type { Contact } from "@shared/types";
+import { ImagePlus, Link2, Star, Trash2, Upload } from "lucide-react";
+import type { Contact, PhoneLabel } from "@shared/types";
 import { createContact, hueForName } from "@shared/merge";
-import { normalizeEmail, normalizeUsPhone } from "@shared/phone";
+import { normalizeEmail, normalizeUsPhone, preferredPhone } from "@shared/phone";
 import { Button } from "@renderer/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@renderer/components/ui/dialog";
 import { Input } from "@renderer/components/ui/input";
@@ -19,6 +19,7 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
 
   const [draft, setDraft] = useState<Contact>(() => contact ?? createContact({ name: "" }, contacts.length));
   const [phoneText, setPhoneText] = useState(contact?.phone ?? "");
+  const [mobileText, setMobileText] = useState(contact?.mobilePhone ?? "");
   const [photoUrl, setPhotoUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -71,11 +72,13 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
   const submit = async () => {
     const name = draft.name.trim();
     const phone = phoneText.trim() ? normalizeUsPhone(phoneText) : "";
+    const mobilePhone = mobileText.trim() ? normalizeUsPhone(mobileText) : "";
     const email = draft.email?.trim() ? normalizeEmail(draft.email) : "";
     if (!name) return setError("Name is required.");
-    if (phoneText.trim() && !phone) return setError("Phone must be a 10-digit US number.");
+    if (phoneText.trim() && !phone) return setError("Office phone must be a 10-digit US number.");
+    if (mobileText.trim() && !mobilePhone) return setError("Cell phone must be a 10-digit US number.");
     if (draft.email?.trim() && !email) return setError("That email address doesn't look right.");
-    if (!phone && !email) return setError("Add a phone number or an email so the quick actions have something to use.");
+    if (!phone && !mobilePhone && !email) return setError("Add a phone number or an email so the quick actions have something to use.");
     const now = new Date().toISOString();
     const next: Contact = {
       ...draft,
@@ -87,6 +90,7 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
       group: draft.group?.trim() || undefined,
       notes: draft.notes?.trim() || undefined,
       phone: phone || undefined,
+      mobilePhone: mobilePhone || undefined,
       email: email || undefined,
       hue: contact ? draft.hue : hueForName(name),
       updatedAt: now,
@@ -98,7 +102,7 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isNew ? "Add contact" : `Edit ${contact.name}`}</DialogTitle>
           <DialogDescription>Phone numbers are stored as US numbers. Photos are copied into the widget's own folder.</DialogDescription>
@@ -141,9 +145,30 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
             <Field label="Company">
               <Input value={draft.company ?? ""} onChange={(e) => set("company", e.target.value)} placeholder="Acme Bank" />
             </Field>
-            <Field label="Phone">
-              <Input value={phoneText} onChange={(e) => setPhoneText(e.target.value)} placeholder="(555) 123-4567" inputMode="tel" />
-            </Field>
+            <div className="col-span-2 space-y-2">
+              {(["office", "cell"] as PhoneLabel[]).map((label) => {
+                const isOffice = label === "office";
+                const value = isOffice ? phoneText : mobileText;
+                const phoneDraft = { ...draft, phone: phoneText.trim(), mobilePhone: mobileText.trim() };
+                return (
+                  <Field key={label} label={isOffice ? "Office phone" : "Cell phone"}>
+                    <div className="flex items-center gap-1">
+                      <Input aria-label={isOffice ? "Office phone" : "Cell phone"} value={value} onChange={(e) => isOffice ? setPhoneText(e.target.value) : setMobileText(e.target.value)} placeholder="(555) 123-4567" inputMode="tel" className="min-w-0 flex-1" />
+                      {(["call", "sms"] as const).map((action) => {
+                        const selected = preferredPhone(phoneDraft, action)?.label === label;
+                        const actionName = action === "call" ? "calls" : "texts";
+                        return (
+                          <button key={action} type="button" disabled={!value.trim()} aria-pressed={selected} aria-label={`Use ${label} for ${actionName}`} title={`Default for ${actionName}`} onClick={() => set(action === "call" ? "defaultCallPhone" : "defaultTextPhone", label)} className={`inline-flex h-9 items-center gap-1 rounded-md px-1.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-30 ${selected ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"}`}>
+                            <Star className={`h-3 w-3 ${selected ? "fill-current" : ""}`} /> {action === "call" ? "Call" : "Text"}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+                );
+              })}
+              <p className="text-[11px] text-muted-foreground">Stars choose the default for calls and texts.</p>
+            </div>
             <Field label="Email">
               <Input value={draft.email ?? ""} onChange={(e) => set("email", e.target.value)} placeholder="jane@acme.com" inputMode="email" />
             </Field>

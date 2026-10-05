@@ -3,6 +3,8 @@ import { Briefcase, CalendarClock, ExternalLink, Loader2, Mail, MessageSquare, P
 import type { Contact, ContactContext, SalesforceDeals } from "@shared/types";
 import { fmtMoney } from "./ContactRow";
 import { relativeTime } from "@shared/merge";
+import { formatPhoneForDisplay, preferredPhone } from "@shared/phone";
+import { CopyField } from "./CopyField";
 import { useContactsStore } from "@renderer/store/useContacts";
 
 function fmtWhen(iso: string): string {
@@ -18,6 +20,8 @@ function fmtWhen(iso: string): string {
 
 /** Inline drawer under a row: note, last email and next meeting (Outlook), plus a link into the record. */
 export function ContactDetails({ contact }: { contact: Contact }) {
+  const call = preferredPhone(contact, "call");
+  const text = preferredPhone(contact, "sms");
   const showToast = useContactsStore((s) => s.showToast);
   const signedIn = useContactsStore((s) => s.m365.signedIn);
   const [ctx, setCtx] = useState<ContactContext | null>(null);
@@ -52,22 +56,26 @@ export function ContactDetails({ contact }: { contact: Contact }) {
     <div className="no-drag mt-2 space-y-1.5 animate-fade-up pl-[52px] pr-1 text-xs" onClick={(e) => e.stopPropagation()}>
       {/* Labeled actions: the same as the hover icons, reachable by click, touch and keyboard. */}
       <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
-        {contact.phone ? (
+        {call && text ? (
           <>
-            <button type="button" className="fu-btn fu-btn-primary" onClick={() => void window.contacts.dial({ action: "call", phone: contact.phone!, contactId: contact.id }).then((r) => !r.ok && showToast(r.error, "error"))}>
-              <Phone className="h-3 w-3" /> Call
+            <button type="button" className="fu-btn fu-btn-primary" title={formatPhoneForDisplay(call.phone)} onClick={() => void window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }).then((r) => !r.ok && showToast(r.error, "error"))}>
+              <Phone className="h-3 w-3" /> Call {call.label}
             </button>
-            <button type="button" className="fu-btn" onClick={() => void window.contacts.dial({ action: "sms", phone: contact.phone!, contactId: contact.id }).then((r) => !r.ok && showToast(r.error, "error"))}>
-              <MessageSquare className="h-3 w-3" /> Text
+            <button type="button" className="fu-btn" title={formatPhoneForDisplay(text.phone)} onClick={() => void window.contacts.dial({ action: "sms", phone: text.phone, contactId: contact.id }).then((r) => !r.ok && showToast(r.error, "error"))}>
+              <MessageSquare className="h-3 w-3" /> Text {text.label}
             </button>
           </>
         ) : null}
         {contact.email ? (
-          <button type="button" className={contact.phone ? "fu-btn" : "fu-btn fu-btn-primary"} onClick={() => void window.contacts.email(contact.email!, contact.id).then((r) => !r.ok && showToast(r.error, "error"))}>
+          <button type="button" className={call ? "fu-btn" : "fu-btn fu-btn-primary"} onClick={() => void window.contacts.email(contact.email!, contact.id).then((r) => !r.ok && showToast(r.error, "error"))}>
             <Mail className="h-3 w-3" /> Email
           </button>
         ) : null}
       </div>
+
+      {contact.phone ? <div className="flex gap-2 text-muted-foreground"><span>Office</span><CopyField value={contact.phone} label={formatPhoneForDisplay(contact.phone)} /></div> : null}
+      {contact.mobilePhone ? <div className="flex gap-2 text-muted-foreground"><span>Cell</span><CopyField value={contact.mobilePhone} label={formatPhoneForDisplay(contact.mobilePhone)} /></div> : null}
+      {contact.email ? <CopyField value={contact.email} label={contact.email} /> : null}
 
       {contact.notes ? (
         <p className="flex items-start gap-1.5 text-foreground/80">

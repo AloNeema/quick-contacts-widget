@@ -1,25 +1,10 @@
-import { app, Menu, nativeImage, Tray } from "electron";
-import path from "node:path";
+import { app, Menu, Tray } from "electron";
+import { trayIcon } from "./icons";
 import { getState, patchSettings } from "./store";
 import { createSettingsWindow, getWidgetWindow, toggleWidgetVisibility, broadcast } from "./windows";
 import { IPC } from "@shared/ipc";
 
 let tray: Tray | null = null;
-
-function trayIcon(): Electron.NativeImage {
-  // macOS menu bar wants a monochrome "template" image that adapts to light/dark menu bars.
-  const file = process.platform === "darwin" ? "trayTemplate.png" : "tray.png";
-  const candidates = [path.join(process.resourcesPath ?? "", file), path.join(__dirname, "../../resources", file)];
-  for (const p of candidates) {
-    const img = nativeImage.createFromPath(p);
-    if (!img.isEmpty()) {
-      const sized = img.resize({ width: 16, height: 16 });
-      if (process.platform === "darwin") sized.setTemplateImage(true);
-      return sized;
-    }
-  }
-  return nativeImage.createEmpty();
-}
 
 export function createTray(): Tray {
   if (tray) return tray;

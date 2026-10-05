@@ -10,6 +10,8 @@ import { ContactRow } from "./ContactRow";
 import { RecentsStrip } from "./RecentsStrip";
 import { DockStrip } from "./DockStrip";
 import { ResizeGrip } from "./ResizeGrip";
+import { useContactReorder } from "@renderer/hooks/useContactReorder";
+import { preferredPhone } from "@shared/phone";
 
 function HeaderButton({ label, onClick, active, children }: { label: string; onClick: () => void; active?: boolean; children: React.ReactNode }) {
   return (
@@ -100,6 +102,7 @@ export function WidgetPanel() {
   const groups = useMemo(() => groupsOf(contacts), [contacts]);
   const activeGroup = group && groups.includes(group) ? group : undefined;
   const visible = useMemo(() => filterContacts(contacts, query, activeGroup, settings.sort), [contacts, query, activeGroup, settings.sort]);
+  const reorder = useContactReorder(visible, settings.sort);
   const pinnedCount = visible.filter((c) => c.pinned).length;
   const showPinnedDivider = pinnedCount > 0 && !query;
   const recents = useMemo(() => recentContacts(contacts, 6), [contacts]);
@@ -196,8 +199,10 @@ export function WidgetPanel() {
                   else void window.contacts.hideWidget();
                 } else if (e.key === "Enter" && query && visible[0]) {
                   const c = visible[0];
+                  const action = e.altKey ? "sms" : "call";
+                  const number = preferredPhone(c, action);
                   if (e.shiftKey && c.email) void window.contacts.email(c.email, c.id).then((r) => !r.ok && showToast(r.error, "error"));
-                  else if (c.phone) void window.contacts.dial({ action: e.altKey ? "sms" : "call", phone: c.phone, contactId: c.id }).then((r) => !r.ok && showToast(r.error, "error"));
+                  else if (number) void window.contacts.dial({ action, phone: number.phone, contactId: c.id }).then((r) => !r.ok && showToast(r.error, "error"));
                   else if (c.email) void window.contacts.email(c.email, c.id).then((r) => !r.ok && showToast(r.error, "error"));
                 }
               }}
@@ -254,7 +259,7 @@ export function WidgetPanel() {
                   {i === pinnedCount && showPinnedDivider ? (
                     <div className="mx-2.5 my-1.5 h-px bg-foreground/10" role="separator" />
                   ) : null}
-                  <ContactRow contact={c} photosBaseUrl={photosBaseUrl} compact={compact} open={openId === c.id} onToggle={() => setOpenId(openId === c.id ? null : c.id)} />
+                  <ContactRow contact={c} photosBaseUrl={photosBaseUrl} compact={compact} open={openId === c.id} onToggle={() => setOpenId(openId === c.id ? null : c.id)} reorder={reorder} />
                 </li>
               ))}
             </ul>

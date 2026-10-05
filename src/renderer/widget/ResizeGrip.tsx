@@ -4,7 +4,10 @@ import { useRef } from "react";
 export function ResizeGrip() {
   const last = useRef<{ x: number; y: number } | null>(null);
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    if (!e.isPrimary || e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
     last.current = { x: e.screenX, y: e.screenY };
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -17,7 +20,7 @@ export function ResizeGrip() {
   };
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     last.current = null;
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
   };
   return (
     <div
@@ -27,9 +30,10 @@ export function ResizeGrip() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      className="no-drag absolute bottom-1.5 right-1.5 h-4 w-4 cursor-nwse-resize opacity-40 hover:opacity-90"
+      onLostPointerCapture={() => { last.current = null; }}
+      className="no-drag absolute bottom-1 right-1 z-40 flex h-7 w-7 touch-none cursor-nwse-resize items-end justify-end p-1 opacity-40 hover:opacity-90"
     >
-      <svg viewBox="0 0 16 16" className="h-full w-full text-foreground" fill="currentColor" aria-hidden>
+      <svg viewBox="0 0 16 16" className="pointer-events-none h-4 w-4 text-foreground" fill="currentColor" aria-hidden>
         <circle cx="13" cy="13" r="1.3" />
         <circle cx="9" cy="13" r="1.3" />
         <circle cx="13" cy="9" r="1.3" />

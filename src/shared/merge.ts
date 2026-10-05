@@ -27,6 +27,7 @@ export function createContact(input: IncomingContact, order: number, now = new D
     title: input.title,
     company: input.company,
     phone: input.phone,
+    mobilePhone: input.mobilePhone,
     email: input.email,
     linkedinUrl: input.linkedinUrl,
     website: input.website,
@@ -54,21 +55,30 @@ export function mergeContacts(
 ): { contacts: Contact[]; summary: MergeSummary } {
   const summary: MergeSummary = { added: 0, updated: 0, skipped: 0, removed: 0 };
   const byEmail = new Map<string, Contact>();
-  const byPhone = new Map<string, Contact>();
+  const byPhone = new Map<string, Contact | null>();
+  const indexPhone = (phone: string | undefined, contact: Contact) => {
+    if (!phone) return;
+    const previous = byPhone.get(phone);
+    byPhone.set(phone, previous === undefined || previous?.id === contact.id ? contact : null);
+  };
   const result = existing.map((c) => ({ ...c }));
   for (const c of result) {
     if (c.email) byEmail.set(c.email, c);
-    if (c.phone) byPhone.set(c.phone, c);
+    indexPhone(c.phone, c);
+    indexPhone(c.mobilePhone, c);
   }
   const touched = new Set<string>();
   let nextOrder = result.reduce((m, c) => Math.max(m, c.order), -1) + 1;
 
   for (const inc of incoming) {
-    if (!inc.email && !inc.phone) {
+    if (!inc.email && !inc.phone && !inc.mobilePhone) {
       summary.skipped++;
       continue;
     }
-    const match = (inc.email && byEmail.get(inc.email)) || (inc.phone && byPhone.get(inc.phone)) || undefined;
+    const officeMatch = inc.phone ? byPhone.get(inc.phone) : undefined;
+    // Coworkers may share an office line. Different cell numbers identify different people.
+    const safeOfficeMatch = officeMatch && inc.mobilePhone && officeMatch.mobilePhone && inc.mobilePhone !== officeMatch.mobilePhone ? undefined : officeMatch;
+    const match = (inc.email && byEmail.get(inc.email)) || (inc.mobilePhone && byPhone.get(inc.mobilePhone)) || safeOfficeMatch || undefined;
     if (match) {
       if (touched.has(match.id)) {
         summary.skipped++; // duplicate row inside the file
@@ -90,7 +100,15 @@ export function mergeContacts(
       set("group", inc.group);
       if (inc.notes && !match.notes) set("notes", inc.notes); // never overwrite a personal note
       if (inc.email && !match.email) set("email", inc.email);
-      if (inc.phone && !match.phone) set("phone", inc.phone);
+      if (inc.mobilePhone && inc.mobilePhone === match.phone && !match.mobilePhone && !match.defaultCallPhone && !match.defaultTextPhone) {
+        // Older imports stored a mobile column in the single generic phone field.
+        set("mobilePhone", inc.mobilePhone);
+        match.phone = inc.phone || undefined;
+        changed = true;
+      } else {
+        if (inc.phone && !match.phone) set("phone", inc.phone);
+        if (inc.mobilePhone && !match.mobilePhone) set("mobilePhone", inc.mobilePhone);
+      }
       if (!match.photo && inc.photoUrl) {
         match.photo = { kind: "url", url: inc.photoUrl };
         changed = true;
@@ -100,14 +118,16 @@ export function mergeContacts(
         summary.updated++;
       }
       if (match.email) byEmail.set(match.email, match);
-      if (match.phone) byPhone.set(match.phone, match);
+      indexPhone(match.phone, match);
+      indexPhone(match.mobilePhone, match);
       continue;
     }
     const created = createContact(inc, nextOrder++, now);
     result.push(created);
     touched.add(created.id);
     if (created.email) byEmail.set(created.email, created);
-    if (created.phone) byPhone.set(created.phone, created);
+    indexPhone(created.phone, created);
+    indexPhone(created.mobilePhone, created);
     summary.added++;
   }
 
@@ -134,6 +154,18 @@ export function moveContact(contacts: Contact[], id: string, direction: -1 | 1):
   if (sorted[i].pinned !== sorted[j].pinned) return sorted; // keep pinned group intact
   [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
   return sorted.map((c, k) => ({ ...c, order: k }));
+}
+
+/** Move a person directly to a drop target; hidden contacts and their metadata stay intact. */
+export function moveContactTo(contacts: Contact[], id: string, targetId: string, side: "before" | "after", sort: ContactSort = "manual"): Contact[] {
+  const sorted = sortContacts(contacts, sort);
+  const source = sorted.find((c) => c.id === id);
+  const target = sorted.find((c) => c.id === targetId);
+  if (!source || !target || id === targetId || source.pinned !== target.pinned) return normalizeOrder(contacts);
+  const rest = sorted.filter((c) => c.id !== id);
+  const at = rest.findIndex((c) => c.id === targetId) + (side === "after" ? 1 : 0);
+  rest.splice(at, 0, source);
+  return rest.map((c, order) => c.order === order ? c : { ...c, order });
 }
 
 /** People contacted most recently, newest first, for the quick strip. */
@@ -192,6 +224,6 @@ export function filterContacts(contacts: Contact[], query: string, group?: strin
   const digits = q.replace(/\D/g, "");
   return sortContacts(scoped, sort).filter((c) =>
     [c.name, c.title, c.company, c.email, c.group, c.notes].some((v) => v?.toLowerCase().includes(q)) ||
-    (digits.length >= 3 && c.phone?.includes(digits)),
+    (digits.length >= 3 && [c.phone, c.mobilePhone].some((phone) => phone?.includes(digits))),
   );
 }

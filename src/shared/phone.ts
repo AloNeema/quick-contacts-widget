@@ -1,3 +1,15 @@
+import type { Contact, DialAction, PhoneLabel } from "./types";
+
+/** One shared choice for every call/text entry point. Falls back when a starred number is removed. */
+export function preferredPhone(contact: Pick<Contact, "phone" | "mobilePhone" | "defaultCallPhone" | "defaultTextPhone">, action: DialAction): { phone: string; label: PhoneLabel } | undefined {
+  const preferred = action === "call" ? contact.defaultCallPhone ?? "office" : contact.defaultTextPhone ?? "cell";
+  const numbers = { office: contact.phone, cell: contact.mobilePhone };
+  const fallback = preferred === "office" ? "cell" : "office";
+  if (numbers[preferred]) return { phone: numbers[preferred]!, label: preferred };
+  if (numbers[fallback]) return { phone: numbers[fallback]!, label: fallback };
+  return undefined;
+}
+
 /** Normalize a US phone to E.164 (+1XXXXXXXXXX). Returns "" if not 10/11 digits. */
 export function normalizeUsPhone(raw: string | undefined | null): string {
   const digits = (raw || "").replace(/\D/g, "");

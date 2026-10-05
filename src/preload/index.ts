@@ -4,6 +4,7 @@ import { IPC, type ContactsApi } from "../shared/ipc";
 const api: ContactsApi = {
   getState: () => ipcRenderer.invoke(IPC.stateGet),
   saveContacts: (contacts) => ipcRenderer.invoke(IPC.contactsSave, contacts),
+  reorderContact: (id, targetId, side, sort) => ipcRenderer.invoke(IPC.contactsReorder, { id, targetId, side, sort }),
   upsertContact: (contact) => ipcRenderer.invoke(IPC.contactsUpsert, contact),
   deleteContact: (id) => ipcRenderer.invoke(IPC.contactsDelete, id),
   setSettings: (patch) => ipcRenderer.invoke(IPC.settingsSet, patch),

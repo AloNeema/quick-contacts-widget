@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Briefcase, Inbox, Loader2, Mail, MoreHorizontal, Paperclip, Phone, RefreshCw, Reply, Search, UserCheck, UserPlus, UserX, X } from "lucide-react";
 import type { ClientItem, ClientReason, Contact } from "@shared/types";
 import { createContact, relativeTime } from "@shared/merge";
+import { preferredPhone } from "@shared/phone";
 import { cn } from "@renderer/lib/utils";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { Avatar } from "./Avatar";
@@ -85,6 +86,7 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
 
   const Row = ({ i }: { i: ClientItem }) => {
     const contact = i.contactId ? byId.get(i.contactId) : undefined;
+    const call = contact && preferredPhone(contact, "call");
     const avatarContact: Contact = contact ?? { ...createContact({ name: i.name, email: i.email }, 0), id: `cl-${i.email}` };
     const [top, ...rest] = i.reasons;
     const why = i.reasons.map((r) => REASON[r].label).join(", ");
@@ -133,8 +135,8 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
           <button type="button" className="fu-btn fu-btn-primary" onClick={() => void (i.webLink ? run(window.contacts.openLink(i.webLink)) : run(window.contacts.email(i.email, contact?.id)))}>
             <Reply className="h-3 w-3" /> Reply
           </button>
-          {contact?.phone ? (
-            <button type="button" className="fu-btn" onClick={() => void run(window.contacts.dial({ action: "call", phone: contact.phone!, contactId: contact.id }))}>
+          {call && contact ? (
+            <button type="button" className="fu-btn" onClick={() => void run(window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }))}>
               <Phone className="h-3 w-3" /> Call
             </button>
           ) : null}

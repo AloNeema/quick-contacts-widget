@@ -7,6 +7,13 @@ directories:
 files:
   - out/**
   - package.json
+extraResources:
+  - from: resources
+    to: .
+    filter:
+      - tray*.png
+      - tray.ico
+      - icon.png
 asar: true
 mac:
   icon: resources/icon.png

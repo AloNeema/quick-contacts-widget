@@ -5,11 +5,12 @@ import { CopyField } from "./CopyField";
 import { ContactDetails } from "./ContactDetails";
 import { useRef } from "react";
 import type { Contact } from "@shared/types";
-import { formatPhoneForDisplay } from "@shared/phone";
+import { formatPhoneForDisplay, preferredPhone } from "@shared/phone";
 import { cn } from "@renderer/lib/utils";
 import { Avatar } from "./Avatar";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { QuickActions } from "./QuickActions";
+import { ContactDragHandle, type useContactReorder } from "@renderer/hooks/useContactReorder";
 
 export function fmtMoney(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`;
@@ -17,7 +18,7 @@ export function fmtMoney(n: number): string {
   return `$${Math.round(n)}`;
 }
 
-export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle }: { contact: Contact; photosBaseUrl: string; compact: boolean; open: boolean; onToggle: () => void }) {
+export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle, reorder }: { contact: Contact; photosBaseUrl: string; compact: boolean; open: boolean; onToggle: () => void; reorder: ReturnType<typeof useContactReorder> }) {
   const prefetch = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startPrefetch = () => {
     if (prefetch.current) clearTimeout(prefetch.current);
@@ -27,12 +28,14 @@ export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle }: 
   const presence = useContactsStore((s) => (contact.m365?.kind === "user" ? s.presence[contact.m365.id] : undefined));
   const showDeals = useContactsStore((s) => s.settings.salesforce.showDeals);
   const deal = showDeals ? contact.sf?.topDeal : undefined;
-  const subtitle = [contact.title, contact.company].filter(Boolean).join(" · ") || formatPhoneForDisplay(contact.phone) || contact.email || "";
+  const call = preferredPhone(contact, "call");
+  const subtitle = [contact.title, contact.company].filter(Boolean).join(" · ") || formatPhoneForDisplay(contact.phone || contact.mobilePhone) || contact.email || "";
   return (
     <li
+      {...reorder.rowProps(contact.id)}
       onMouseEnter={startPrefetch}
       onMouseLeave={stopPrefetch}
-      className={cn("contact-row group no-drag relative rounded-2xl px-2.5", compact ? "py-1.5" : "py-2", open && "contact-row-open")}
+      className={cn("contact-row group no-drag relative rounded-2xl px-2.5", compact ? "py-1.5" : "py-2", open && "contact-row-open", reorder.rowClass(contact.id))}
     >
       <div
         role="button"
@@ -40,8 +43,9 @@ export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle }: 
         aria-expanded={open}
         onClick={onToggle}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle())}
-        className="flex cursor-default items-center gap-3 rounded-xl"
+        className="flex cursor-default items-center gap-2 rounded-xl"
       >
+      <ContactDragHandle reorder={reorder} contact={contact} />
       <Avatar contact={contact} photosBaseUrl={photosBaseUrl} size={compact ? 32 : 40} presence={presence} />
       {/* Text column reserves room for the hover actions instead of being painted over by them. */}
       <div className="min-w-0 flex-1 transition-[padding] duration-150 group-hover:pr-[106px] group-focus-within:pr-[106px]">
@@ -72,9 +76,8 @@ export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle }: 
             <span className="min-w-0 truncate">{subtitle}</span>
           </p>
           <p className="absolute inset-0 flex items-center gap-2 truncate opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-            {contact.phone ? <CopyField value={contact.phone} label={formatPhoneForDisplay(contact.phone)} /> : null}
-            {contact.email ? <CopyField value={contact.email} label={contact.email} /> : null}
-            {!contact.phone && !contact.email ? <span>No phone or email</span> : null}
+            {call ? <CopyField value={call.phone} label={formatPhoneForDisplay(call.phone)} /> : contact.email ? <CopyField value={contact.email} label={contact.email} /> : null}
+            {!contact.phone && !contact.mobilePhone && !contact.email ? <span>No phone or email</span> : null}
           </p>
         </div>
       </div>

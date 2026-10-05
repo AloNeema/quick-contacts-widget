@@ -1,6 +1,7 @@
 /** Shared data model for the QCF Contacts widget (main, preload and renderer). */
 
 export type DialAction = "call" | "sms";
+export type PhoneLabel = "office" | "cell";
 
 export type DialerProviderId = "ringcentral" | "phonelink" | "system" | "custom";
 
@@ -21,8 +22,11 @@ export interface Contact {
   name: string;
   title?: string;
   company?: string;
-  /** E.164, e.g. +15551234567. */
+  /** Office number, E.164. Retains the original phone field for existing contacts. */
   phone?: string;
+  mobilePhone?: string;
+  defaultCallPhone?: PhoneLabel;
+  defaultTextPhone?: PhoneLabel;
   /** Lower-cased. */
   email?: string;
   linkedinUrl?: string;
@@ -290,6 +294,7 @@ export type ImportField =
   | "company"
   | "email"
   | "phone"
+  | "mobilePhone"
   | "linkedinUrl"
   | "photoUrl"
   | "website"
@@ -302,6 +307,7 @@ export interface IncomingContact {
   title?: string;
   company?: string;
   phone?: string;
+  mobilePhone?: string;
   email?: string;
   linkedinUrl?: string;
   photoUrl?: string;

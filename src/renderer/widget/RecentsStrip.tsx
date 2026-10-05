@@ -1,5 +1,6 @@
 import { Clock } from "lucide-react";
 import type { Contact } from "@shared/types";
+import { preferredPhone } from "@shared/phone";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { Avatar } from "./Avatar";
@@ -12,7 +13,9 @@ export function RecentsStrip({ contacts, photosBaseUrl }: { contacts: Contact[];
   const act = async (c: Contact, e: React.MouseEvent) => {
     const run = (p: Promise<{ ok: true } | { ok: false; error: string }>) => p.then((r) => !r.ok && showToast(r.error, "error"));
     if (e.shiftKey && c.email) return run(window.contacts.email(c.email, c.id));
-    if (c.phone) return run(window.contacts.dial({ action: e.altKey ? "sms" : "call", phone: c.phone, contactId: c.id }));
+    const action = e.altKey ? "sms" : "call";
+    const number = preferredPhone(c, action);
+    if (number) return run(window.contacts.dial({ action, phone: number.phone, contactId: c.id }));
     if (c.email) return run(window.contacts.email(c.email, c.id));
   };
 

@@ -3,6 +3,7 @@ import type { ClientsState, Contact, ContactContext, DialAction, ImportFile, Inc
 export const IPC = {
   stateGet: "state:get",
   contactsSave: "contacts:save",
+  contactsReorder: "contacts:reorder",
   contactsUpsert: "contacts:upsert",
   contactsDelete: "contacts:delete",
   settingsSet: "settings:set",
@@ -65,6 +66,7 @@ export interface DialRequest {
 export interface ContactsApi {
   getState(): Promise<{ settings: Settings; contacts: Contact[]; photosBaseUrl: string; platform: string; version: string }>;
   saveContacts(contacts: Contact[]): Promise<Contact[]>;
+  reorderContact(id: string, targetId: string, side: "before" | "after", sort: Settings["sort"]): Promise<{ contacts: Contact[]; settings: Settings }>;
   upsertContact(contact: Contact): Promise<Contact[]>;
   deleteContact(id: string): Promise<Contact[]>;
   setSettings(patch: Partial<Settings>): Promise<Settings>;

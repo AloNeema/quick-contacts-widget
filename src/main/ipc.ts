@@ -2,7 +2,7 @@ import { app, BrowserWindow, clipboard, ipcMain, shell } from "electron";
 import { z } from "zod";
 import { IPC } from "@shared/ipc";
 import { buildDialUri, buildLinkedinUri, buildMailtoUri, DialerError } from "@shared/dialer";
-import { mergeContacts, recordContactUse } from "@shared/merge";
+import { mergeContacts, moveContactTo, recordContactUse } from "@shared/merge";
 import type { Contact, IncomingContact, MergeOptions, Settings } from "@shared/types";
 import { contactSchema, getState, patchSettings, setContacts, settingsPatchSchema } from "./store";
 import { deletePhoto, deletePhotoForContact, photosBaseUrl, pickPhoto, setPhotoFromPath, setPhotoFromUrl } from "./photos";
@@ -30,6 +30,7 @@ const incomingSchema = z.object({
   title: z.string().optional(),
   company: z.string().optional(),
   phone: z.string().optional(),
+  mobilePhone: z.string().optional(),
   email: z.string().optional(),
   linkedinUrl: z.string().optional(),
   photoUrl: z.string().optional(),
@@ -88,6 +89,20 @@ export function registerIpc(): void {
     notify();
     refreshLogosSoon();
     return saved;
+  });
+
+  ipcMain.handle(IPC.contactsReorder, async (_e, raw: unknown) => {
+    const req = z.object({ id: z.string(), targetId: z.string(), side: z.enum(["before", "after"]), sort: z.enum(["manual", "name", "recent", "frequent"]) }).parse(raw);
+    const list = getState().contacts;
+    const source = list.find((c) => c.id === req.id);
+    const target = list.find((c) => c.id === req.targetId);
+    if (!source || !target || source.id === target.id) return { contacts: list, settings: getState().settings };
+    if (source.pinned !== target.pinned) throw new Error("Pinned contacts stay at the top. Change the pin before moving between sections.");
+    // Read the latest contacts here: dragging never sends a stale copy of contact details.
+    const contacts = await setContacts(moveContactTo(list, req.id, req.targetId, req.side, req.sort));
+    const settings = await patchSettings({ sort: "manual" });
+    notify();
+    return { contacts, settings };
   });
 
   ipcMain.handle(IPC.contactsUpsert, async (_e, raw: unknown) => {

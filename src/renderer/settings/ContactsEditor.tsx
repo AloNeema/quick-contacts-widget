@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
+import { Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
 import type { Contact } from "@shared/types";
-import { filterContacts, moveContact, normalizeOrder } from "@shared/merge";
+import { filterContacts, normalizeOrder } from "@shared/merge";
+import { ContactDragHandle, useContactReorder } from "@renderer/hooks/useContactReorder";
 import { formatPhoneForDisplay } from "@shared/phone";
 import { Button } from "@renderer/components/ui/button";
 import { Input } from "@renderer/components/ui/input";
@@ -20,13 +21,13 @@ export function ContactsEditor() {
   const [confirmDelete, setConfirmDelete] = useState<Contact | null>(null);
 
   const visible = useMemo(() => filterContacts(contacts, query), [contacts, query]);
+  const reorder = useContactReorder(visible, "manual");
 
   const save = async (next: Contact[]) => {
     setContacts(normalizeOrder(next));
     setContacts(await window.contacts.saveContacts(next));
   };
   const togglePin = (c: Contact) => void save(contacts.map((x) => (x.id === c.id ? { ...x, pinned: !x.pinned, updatedAt: new Date().toISOString() } : x)));
-  const move = (c: Contact, dir: -1 | 1) => void save(moveContact(contacts, c.id, dir));
   const remove = async (c: Contact) => {
     setConfirmDelete(null);
     setContacts(await window.contacts.deleteContact(c.id));
@@ -51,8 +52,9 @@ export function ContactsEditor() {
         </p>
       ) : (
         <ul className="divide-y rounded-xl border">
-          {visible.map((c, i) => (
-            <li key={c.id} className="group flex items-center gap-3 px-3 py-2.5">
+          {visible.map((c) => (
+            <li key={c.id} {...reorder.rowProps(c.id)} className={`group flex items-center gap-3 px-3 py-2.5 ${reorder.rowClass(c.id)}`}>
+              <ContactDragHandle reorder={reorder} contact={c} />
               <Avatar contact={c} photosBaseUrl={photosBaseUrl} size={36} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
@@ -62,8 +64,8 @@ export function ContactsEditor() {
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
                   {[c.title, c.company].filter(Boolean).join(" · ")}
-                  {(c.title || c.company) && (c.phone || c.email) ? " · " : ""}
-                  {[formatPhoneForDisplay(c.phone), c.email].filter(Boolean).join(" · ")}
+                  {(c.title || c.company) && (c.phone || c.mobilePhone || c.email) ? " · " : ""}
+                  {[c.phone && `Office ${formatPhoneForDisplay(c.phone)}`, c.mobilePhone && `Cell ${formatPhoneForDisplay(c.mobilePhone)}`, c.email].filter(Boolean).join(" · ")}
                 </p>
               </div>
               <div className="hidden md:block">
@@ -72,12 +74,6 @@ export function ContactsEditor() {
               <div className="flex items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
                 <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={c.pinned ? "Unpin" : "Pin to top"} onClick={() => togglePin(c)}>
                   {c.pinned ? <PinOff /> : <Pin />}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Move up" disabled={i === 0 || Boolean(query)} onClick={() => move(c, -1)}>
-                  <ArrowUp />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Move down" disabled={i === visible.length - 1 || Boolean(query)} onClick={() => move(c, 1)}>
-                  <ArrowDown />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit" onClick={() => setEditing(c)}>
                   <Pencil />
