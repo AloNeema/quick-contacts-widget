@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Briefcase, CalendarClock, ExternalLink, Loader2, Mail, MessageSquare, Phone, StickyNote, Video } from "lucide-react";
+import { Briefcase, CalendarClock, Copy, ExternalLink, Loader2, Mail, MessageSquare, Phone, StickyNote, Video } from "lucide-react";
 import type { Contact, ContactContext, SalesforceDeals } from "@shared/types";
 import { fmtMoney } from "./ContactRow";
 import { relativeTime } from "@shared/merge";
@@ -20,6 +20,7 @@ function fmtWhen(iso: string): string {
 
 /** Inline drawer under a row: note, last email and next meeting (Outlook), plus a link into the record. */
 export function ContactDetails({ contact }: { contact: Contact }) {
+  const talkdesk = useContactsStore((s) => s.settings.dialer.id === "talkdesk");
   const call = preferredPhone(contact, "call");
   const text = preferredPhone(contact, "sms");
   const showToast = useContactsStore((s) => s.showToast);
@@ -59,11 +60,11 @@ export function ContactDetails({ contact }: { contact: Contact }) {
       <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
         {call && text ? (
           <>
-            <button type="button" className="fu-btn fu-btn-primary" title={formatPhoneForDisplay(call.phone)} onClick={() => void window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }).then((r) => !r.ok && showToast(r.error, "error"))}>
-              <Phone className="h-3 w-3" /> Call {call.label}
+            <button type="button" className="fu-btn fu-btn-primary" title={formatPhoneForDisplay(call.phone)} onClick={() => void window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }).then((r) => { if (!r.ok) showToast(r.error, "error"); else if (r.message) showToast(r.message); })}>
+              <Phone className="h-3 w-3" /> {talkdesk ? "Call via Chrome" : "Call"} {call.label}
             </button>
-            <button type="button" className="fu-btn" title={formatPhoneForDisplay(text.phone)} onClick={() => void window.contacts.dial({ action: "sms", phone: text.phone, contactId: contact.id }).then((r) => !r.ok && showToast(r.error, "error"))}>
-              <MessageSquare className="h-3 w-3" /> Text {text.label}
+            <button type="button" className="fu-btn" title={formatPhoneForDisplay(text.phone)} onClick={() => void window.contacts.dial({ action: "sms", phone: text.phone, contactId: contact.id }).then((r) => { if (!r.ok) showToast(r.error, "error"); else if (r.message) showToast(r.message); })}>
+              {talkdesk ? <Copy className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />} {talkdesk ? "Copy for text" : "Text"} {text.label}
             </button>
           </>
         ) : null}

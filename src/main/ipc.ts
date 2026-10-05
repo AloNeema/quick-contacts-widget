@@ -1,7 +1,9 @@
 import { app, BrowserWindow, clipboard, ipcMain, shell } from "electron";
 import { z } from "zod";
 import { IPC } from "@shared/ipc";
-import { buildDialUri, buildLinkedinUri, buildMailtoUri, DialerError } from "@shared/dialer";
+import { buildLinkedinUri, buildMailtoUri } from "@shared/dialer";
+import { openTalkdeskCall } from "./talkdesk";
+import { dispatchDial } from "./dial";
 import { mergeContacts, moveContactTo, recordContactUse } from "@shared/merge";
 import type { Contact, IncomingContact, MergeOptions, Settings } from "@shared/types";
 import { contactSchema, getState, patchSettings, setContacts, settingsPatchSchema } from "./store";
@@ -39,7 +41,7 @@ const incomingSchema = z.object({
   notes: z.string().optional(),
 });
 
-type Result = { ok: true } | { ok: false; error: string };
+type Result = { ok: true; message?: string } | { ok: false; error: string };
 
 function sender(e: Electron.IpcMainInvokeEvent): BrowserWindow | null {
   return BrowserWindow.fromWebContents(e.sender);
@@ -194,19 +196,12 @@ export function registerIpc(): void {
 
   ipcMain.handle(IPC.dialOpen, async (_e, raw: unknown): Promise<Result> => {
     const req = z.object({ action: z.enum(["call", "sms"]), phone: z.string(), contactId: z.string().optional() }).parse(raw);
-    try {
-      const uri = buildDialUri(getState().settings.dialer, req.action, req.phone);
-      const result = await openExternalSafe(uri);
-      if (result.ok) await recordUse(req.contactId);
-      if (!result.ok && req.action === "sms") {
-        // No sms: handler registered (common without Phone Link). Leave the number on the clipboard.
-        clipboard.writeText(req.phone);
-        return { ok: false, error: "No texting app is set up for sms: links. The number was copied to your clipboard." };
-      }
-      return result;
-    } catch (err) {
-      return { ok: false, error: err instanceof DialerError ? err.message : "Could not start the call" };
-    }
+    return dispatchDial(getState().settings.dialer, req, {
+      openExternal: openExternalSafe,
+      openTalkdesk: openTalkdeskCall,
+      copy: phone => clipboard.writeText(phone),
+      recordUse,
+    });
   });
 
   ipcMain.handle(IPC.emailOpen, async (_e, raw: unknown, rawId?: unknown): Promise<Result> => {

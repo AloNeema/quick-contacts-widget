@@ -54,9 +54,10 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   }, [state.items, query, filter]);
   const filterLabel = filter === "waiting" ? "waiting on you" : filter === "new" ? "new" : "";
 
-  const run = async (p: Promise<{ ok: true } | { ok: false; error: string }>) => {
+  const run = async (p: Promise<{ ok: true; message?: string } | { ok: false; error: string }>) => {
     const r = await p;
     if (!r.ok) showToast(r.error, "error");
+    else if (r.message) showToast(r.message);
   };
   const mark = async (i: ClientItem, action: "hide" | "notClient") => {
     setMenu(null);
