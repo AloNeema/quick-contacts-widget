@@ -1,12 +1,15 @@
 {
   "name": "qcf-contacts-widget",
   "productName": "QCF Contacts",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Transparent desktop widget with quick Call / Text / Email actions for your key work contacts.",
   "private": true,
   "main": "./out/main/index.js",
   "author": "Quick Capital Funding",
-  "repository": { "type": "git", "url": "https://github.com/AloNeema/quick-contacts-widget.git" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AloNeema/quick-contacts-widget.git"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",

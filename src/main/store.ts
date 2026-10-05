@@ -140,15 +140,22 @@ export async function loadState(): Promise<PersistedState> {
     if (parsed.success) {
       state = parsed.data;
     } else {
-      // Keep what we can rather than wiping the user's list.
+      // Recover older imports before validation: previous versions could save overlong fields.
       const loose = JSON.parse(raw) as Partial<PersistedState>;
       const contacts = Array.isArray(loose.contacts)
-        ? loose.contacts.filter((c) => contactSchema.safeParse(c).success)
+        ? loose.contacts.flatMap((c) => {
+            if (!c || typeof c !== "object" || Array.isArray(c)) return [];
+            const recovered = contactSchema.safeParse(clampContact(c));
+            return recovered.success ? [recovered.data] : [];
+          })
         : [];
-      const settings = settingsSchema.safeParse(loose.settings).success ? (loose.settings as Settings) : structuredClone(DEFAULT_SETTINGS);
+      const parsedSettings = settingsSchema.safeParse(loose.settings);
+      const settings = parsedSettings.success ? parsedSettings.data : structuredClone(DEFAULT_SETTINGS);
       state = { settings, contacts };
-      await fs.copyFile(statePath(), `${statePath()}.corrupt-${Date.now()}`).catch(() => undefined);
-      await saveState();
+      // Keep the full original text before persisting repaired fields. If backup fails,
+      // show the recovered contacts in memory but leave the original file untouched.
+      const backedUp = await fs.copyFile(statePath(), `${statePath()}.corrupt-${Date.now()}`).then(() => true, () => false);
+      if (backedUp) await saveState();
     }
   } catch {
     state = freshState();
