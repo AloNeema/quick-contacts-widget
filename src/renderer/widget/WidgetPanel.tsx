@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, MoreHorizontal, PanelLeftClose, PanelRightClose, Pin, PinOff, Reply, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
 import { ClientsList, type ClientFilter } from "./ClientsList";
 import { SortMenu } from "./SortMenu";
@@ -253,14 +253,15 @@ export function WidgetPanel() {
           ) : visible.length === 0 ? (
             <p className="px-3 py-8 text-center text-xs text-muted-foreground">{query ? <>No matches for “{query}”.</> : <>Nobody in {activeGroup}.</>}</p>
           ) : (
-            <ul className="space-y-0.5">
+            <ul>
               {visible.map((c, i) => (
-                <li key={c.id} className="contents">
+                <Fragment key={c.id}>
                   {i === pinnedCount && showPinnedDivider ? (
-                    <div className="mx-2.5 my-1.5 h-px bg-foreground/10" role="separator" />
+                    <li className="mx-2.5 my-1.5 h-px bg-foreground/10" role="separator" />
                   ) : null}
+                  {/* ContactRow renders its own <li>. */}
                   <ContactRow contact={c} photosBaseUrl={photosBaseUrl} compact={compact} open={openId === c.id} onToggle={() => setOpenId(openId === c.id ? null : c.id)} reorder={reorder} />
-                </li>
+                </Fragment>
               ))}
             </ul>
           )}

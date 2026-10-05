@@ -11,6 +11,7 @@ import { promises as fs } from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { SALESFORCE_REDIRECT_URI, SALESFORCE_SCOPES } from "@shared/defaults";
+import { applySyncChanges } from "@shared/merge";
 import type { Contact, SalesforceDeal, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary } from "@shared/types";
 import { getState, setContacts } from "./store";
 
@@ -218,7 +219,8 @@ const topDealOf = (opps: SfOpp[]): TopDeal =>
 export async function sfSync(): Promise<{ summary: SalesforceSyncSummary; status: SalesforceStatus }> {
   const summary: SalesforceSyncSummary = { linked: 0, unmatched: 0 };
   if (!(await loadTokens())) return { summary, status: set({ lastError: "Not signed in to Salesforce" }) };
-  const contacts = getState().contacts.map((c) => ({ ...c }));
+  const snapshot = getState().contacts;
+  const contacts = snapshot.map((c) => ({ ...c }));
   const emails = [...new Set(contacts.map((c) => c.email).filter((e): e is string => Boolean(e)))];
   if (emails.length === 0) return { summary, status };
   const now = new Date().toISOString();
@@ -260,7 +262,8 @@ export async function sfSync(): Promise<{ summary: SalesforceSyncSummary; status
       }
       summary.unmatched++;
     }
-    await setContacts(contacts);
+    // Merge into the latest list: edits made while the sync ran are kept.
+    await setContacts(applySyncChanges(getState().contacts, snapshot, contacts, ["sf"]));
     dealsCache.clear();
     return { summary, status: set({ lastSyncAt: now, lastError: undefined }) };
   } catch (err) {

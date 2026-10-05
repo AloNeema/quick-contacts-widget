@@ -42,7 +42,8 @@ export function ContactRow({ contact, photosBaseUrl, compact, open, onToggle, re
         tabIndex={0}
         aria-expanded={open}
         onClick={onToggle}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle())}
+        // Only keys pressed on the row itself: Enter on a nested copy button or drag handle must not toggle the drawer.
+        onKeyDown={(e) => e.target === e.currentTarget && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle())}
         className="flex cursor-default items-center gap-2 rounded-xl"
       >
       <ContactDragHandle reorder={reorder} contact={contact} />

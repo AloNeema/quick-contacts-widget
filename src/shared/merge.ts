@@ -227,3 +227,25 @@ export function filterContacts(contacts: Contact[], query: string, group?: strin
     (digits.length >= 3 && [c.phone, c.mobilePhone].some((phone) => phone?.includes(digits))),
   );
 }
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * Fold a background sync's results into the latest contacts. A sync works on a snapshot across
+ * slow network calls; writing the snapshot back would undo edits, adds and deletes made meanwhile.
+ * A field is taken from the sync only when the sync changed it and nobody else did.
+ */
+export function applySyncChanges(latest: Contact[], snapshot: Contact[], synced: Contact[], fields: (keyof Contact)[]): Contact[] {
+  const before = new Map(snapshot.map((c) => [c.id, c]));
+  const after = new Map(synced.map((c) => [c.id, c]));
+  return latest.map((c) => {
+    const b = before.get(c.id);
+    const a = after.get(c.id);
+    if (!b || !a) return c;
+    let next = c;
+    for (const f of fields) {
+      if (!same(a[f], b[f]) && same(c[f], b[f])) next = { ...next, [f]: a[f] };
+    }
+    return next;
+  });
+}

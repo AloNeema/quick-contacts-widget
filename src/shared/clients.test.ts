@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCandidates, computeClients, excludedLenderDomains, isAutomatedAddress, isClient } from "./clients";
+import { buildCandidates, computeClients, excludedLenderDomains, isAutomatedAddress, isClient, stampFirstSeen } from "./clients";
 import { createContact } from "./merge";
 import type { ClientCandidate, MailMessageLite } from "./types";
 
@@ -105,5 +105,26 @@ describe("computeClients", () => {
     const contact = { ...createContact({ name: "Amy Shop", email: "c@x.com" }, 0), sf: { kind: "contact" as const, id: "003", syncedAt: "x" } };
     const { items } = computeClients([c], [contact], {}, new Set(), {}, undefined);
     expect(items[0]).toMatchObject({ contactId: contact.id, name: "Amy Shop", inSalesforce: true });
+  });
+});
+
+describe("v0.1.2 bug fixes", () => {
+  it("drops read receipts", () => {
+    const list = buildCandidates(
+      [m({ direction: "in", at: "2026-10-01T01:00:00Z", subject: "Read: Funding docs", from: { address: "dana@brightpath.com" }, hasAttachments: true })],
+      opts,
+    );
+    expect(list).toEqual([]);
+  });
+  it("keeps small-business shared mailboxes like info@ and sales@", () => {
+    expect(isAutomatedAddress("info@joesplumbing.com")).toBe(false);
+    expect(isAutomatedAddress("sales@acme.com")).toBe(false);
+    expect(isAutomatedAddress("no-reply@acme.com")).toBe(true);
+  });
+  it("does not re-stamp first-scan clients as new on the next scan", () => {
+    const seen: Record<string, string> = {};
+    stampFirstSeen(seen, ["a@x.com"], true, "2026-10-01T00:00:00Z");
+    stampFirstSeen(seen, ["a@x.com", "b@y.com"], false, "2026-10-02T00:00:00Z");
+    expect(seen).toEqual({ "a@x.com": "", "b@y.com": "2026-10-02T00:00:00Z" });
   });
 });

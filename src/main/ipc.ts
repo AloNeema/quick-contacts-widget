@@ -240,8 +240,13 @@ export function registerIpc(): void {
     return r;
   });
   ipcMain.handle(IPC.sfDeals, async (_e, raw: unknown) => {
-    const r = await sfDeals(z.string().parse(raw));
-    notify();
+    const id = z.string().parse(raw);
+    const topDeal = () => JSON.stringify(getState().contacts.find((c) => c.id === id)?.sf?.topDeal ?? null);
+    const before = topDeal();
+    const r = await sfDeals(id);
+    // Broadcast only when the row snapshot changed: an unconditional notify re-renders the
+    // drawer, which asks for deals again and loops.
+    if (topDeal() !== before) notify();
     return r;
   });
   ipcMain.handle(IPC.clientsGet, () => getClientsState());
