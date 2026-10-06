@@ -15,7 +15,7 @@ export function GeneralSettings() {
   const showToast = useContactsStore((s) => s.showToast);
   const update = useContactsStore((s) => s.update);
   const platform = useContactsStore((s) => s.platform);
-  const previewBuild = update.currentVersion.includes("-");
+  const previewBuild = useContactsStore((s) => s.version.includes("-"));
   const pretty = (acc: string) => acc.replace("CommandOrControl", platform === "darwin" ? "⌘" : "Ctrl");
   const [token, setToken] = useState("");
   const [hotkey, setHotkey] = useState(settings.hotkey);
