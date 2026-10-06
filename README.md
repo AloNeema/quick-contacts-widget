@@ -6,7 +6,7 @@ A transparent, frameless Windows widget that floats on your desktop with your ke
 
 ## Talkdesk preview
 
-Version 0.1.4-beta.2 simplifies **Talkdesk** to **Copy for call** and **Copy for text**. Paste the starred number into Workspace Desktop. No browser page is opened and copying does not update contact history. Settings → General now includes **Save backup**, **Restore backup**, automatic checkpoints and **Copy setup from regular app** in previews. Backups preserve Microsoft app ID/tenant, Salesforce consumer key, contacts, preferences, images and Clients hide/not-client choices. Sign-ins and the updater token are not exported. Preview builds use a separate **QCF Contacts Preview** profile and are updated manually. See [setup and testing](docs/TALKDESK-PILOT.md).
+Version 0.1.4-beta.3 simplifies **Talkdesk** to **Copy for call** and **Copy for text**. Paste the starred number into Workspace Desktop. No browser page is opened and copying does not update contact history. Settings → General now includes **Save backup**, **Restore backup**, automatic checkpoints and **Copy setup from regular app** in previews. Backups preserve Microsoft app ID/tenant, Salesforce consumer key, contacts, preferences, images and Clients hide/not-client choices. Sign-ins and the updater token are not exported. Preview builds use a separate **QCF Contacts Preview** profile, leave the regular app's OS startup setting unchanged and are updated manually. Use the portable preview for testing; the installer still shares the regular app's identity. See [setup and testing](docs/TALKDESK-PILOT.md).
 
 ## What it does
 
@@ -85,7 +85,7 @@ The widget only reads Contacts, Leads, Accounts and Opportunities with your own 
 
 ## Releasing an update
 
-Bump `version` in `package.json`, merge, then run the **Release** workflow from the Actions tab. It builds on Windows and uploads the installer, portable exe and `latest.yml` to a **draft** release tagged `v<version>`; publish the draft and installed widgets pick it up within six hours (or via *Check now*). While the repository is private, each PC needs a fine-grained personal access token with read-only *Contents* permission pasted once under Settings › General › Private repository token; it is stored encrypted on that PC.
+First complete the [native acceptance gates](docs/TALKDESK-PILOT.md#native-acceptance-gates-before-a-stable-release) for the final candidate. Update `version` in both `package.json` and `package-lock.json`, obtain fresh green CI, then merge and run the **Release** workflow from the Actions tab when release creation is approved. It builds on Windows and uploads the installer, portable exe and `latest.yml` to a **draft** release tagged `v<version>`; publish the draft and installed widgets pick it up within six hours (or via *Check now*). While the repository is private, each PC needs a fine-grained personal access token with read-only *Contents* permission pasted once under Settings › General › Private repository token; it is stored encrypted on that PC.
 
 ## Spreadsheet format
 

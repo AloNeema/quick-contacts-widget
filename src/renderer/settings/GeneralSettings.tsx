@@ -15,6 +15,7 @@ export function GeneralSettings() {
   const showToast = useContactsStore((s) => s.showToast);
   const update = useContactsStore((s) => s.update);
   const platform = useContactsStore((s) => s.platform);
+  const previewBuild = update.currentVersion.includes("-");
   const pretty = (acc: string) => acc.replace("CommandOrControl", platform === "darwin" ? "⌘" : "Ctrl");
   const [token, setToken] = useState("");
   const [hotkey, setHotkey] = useState(settings.hotkey);
@@ -60,8 +61,9 @@ export function GeneralSettings() {
       />
       <Toggle
         label="Start with Windows"
-        hint="Launches hidden in the tray when you sign in. Applies to the installed app, not a dev build."
-        checked={settings.launchAtLogin}
+        hint={previewBuild ? "Preview builds leave the regular app's startup setting unchanged." : "Launches hidden in the tray when you sign in. Applies to packaged stable builds only."}
+        checked={!previewBuild && settings.launchAtLogin}
+        disabled={previewBuild}
         onChange={(v) => void updateSettings({ launchAtLogin: v })}
       />
       <section className="space-y-3 rounded-xl border p-4">
@@ -138,14 +140,14 @@ export function GeneralSettings() {
   );
 }
 
-function Toggle({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ label, hint, checked, onChange, disabled = false }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <div className="flex items-start justify-between gap-6">
       <div>
         <Label className="text-sm">{label}</Label>
         <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
+      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </div>
   );
 }
