@@ -4,6 +4,10 @@ A transparent, frameless Windows widget that floats on your desktop with your ke
 
 ![icon](resources/icon.png)
 
+## Paste an email signature
+
+Version 0.1.4-beta.4 adds **Settings → Contacts → Paste signature**. Copy one person's signature text from Outlook, paste it, and choose **Review contact**. Name, title, company, email, labeled Office/Cell numbers, website and LinkedIn are suggested locally; edit everything and choose the call/text stars before **Add contact**. Ambiguous numbers and possible existing contacts are flagged. Fax numbers are excluded; extensions go in Notes. Nothing is saved by parsing or canceling, and existing contacts are never merged automatically. Image-only signatures and non-US-format numbers need manual entry. No AI service or API key is required. See [signature import](docs/SIGNATURE-IMPORT.md).
+
 ## Talkdesk preview
 
 Version 0.1.4-beta.3 simplifies **Talkdesk** to **Copy for call** and **Copy for text**. Paste the starred number into Workspace Desktop. No browser page is opened and copying does not update contact history. Settings → General now includes **Save backup**, **Restore backup**, automatic checkpoints and **Copy setup from regular app** in previews. Backups preserve Microsoft app ID/tenant, Salesforce consumer key, contacts, preferences, images and Clients hide/not-client choices. Sign-ins and the updater token are not exported. Preview builds use a separate **QCF Contacts Preview** profile, leave the regular app's OS startup setting unchanged and are updated manually. Use the portable preview for testing; the installer still shares the regular app's identity. See [setup and testing](docs/TALKDESK-PILOT.md).

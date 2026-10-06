@@ -9,20 +9,24 @@ import { Input } from "@renderer/components/ui/input";
 import { Label } from "@renderer/components/ui/label";
 import { Avatar } from "@renderer/widget/Avatar";
 import { useContactsStore } from "@renderer/store/useContacts";
+import type { SignatureDraft } from "@shared/signature";
 
-export function ContactForm({ contact, onClose }: { contact: Contact | null; onClose: () => void }) {
+export function ContactForm({ contact, signature, onClose, onOpenExisting }: { contact: Contact | null; signature?: SignatureDraft; onClose: () => void; onOpenExisting?: (contact: Contact) => void }) {
   const contacts = useContactsStore((s) => s.contacts);
   const groups = Array.from(new Set(contacts.map((c) => c.group?.trim()).filter((g): g is string => Boolean(g)))).sort();
   const photosBaseUrl = useContactsStore((s) => s.photosBaseUrl);
   const setContacts = useContactsStore((s) => s.setContacts);
   const showToast = useContactsStore((s) => s.showToast);
 
-  const [draft, setDraft] = useState<Contact>(() => contact ?? createContact({ name: "" }, contacts.length));
-  const [phoneText, setPhoneText] = useState(contact?.phone ?? "");
-  const [mobileText, setMobileText] = useState(contact?.mobilePhone ?? "");
+  const [draft, setDraft] = useState<Contact>(() => contact ?? createContact(signature?.fields ?? { name: "" }, contacts.length));
+  const [phoneText, setPhoneText] = useState(contact?.phone ?? signature?.fields.phone ?? "");
+  const [mobileText, setMobileText] = useState(contact?.mobilePhone ?? signature?.fields.mobilePhone ?? "");
   const [photoUrl, setPhotoUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const duplicate = signature && contacts.find(c => c.id !== draft.id && c.email && normalizeEmail(c.email) === normalizeEmail(draft.email));
+  const sharedNumber = signature && contacts.find(c => c.id !== draft.id && [c.phone, c.mobilePhone].some(n => n && [normalizeUsPhone(phoneText), normalizeUsPhone(mobileText)].includes(n)));
 
   // Photo changes are saved immediately by the main process; mirror them in the draft.
   const live = contacts.find((c) => c.id === draft.id);
@@ -34,6 +38,10 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
   const set = <K extends keyof Contact>(k: K, v: Contact[K]) => setDraft((d) => ({ ...d, [k]: v }));
 
   const ensureSaved = async (): Promise<boolean> => {
+    if (signature && !contacts.some(c => c.id === draft.id)) {
+      setError("Review and add the contact first. You can add a photo afterward by editing it.");
+      return false;
+    }
     // Photos attach to a stored contact, so a brand-new contact is saved first.
     if (!isNew || contacts.some((c) => c.id === draft.id)) return true;
     const name = draft.name.trim();
@@ -70,6 +78,7 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
   const removePhoto = async () => setContacts(await window.contacts.deletePhoto(draft.id));
 
   const submit = async () => {
+    if (saving) return;
     const name = draft.name.trim();
     const phone = phoneText.trim() ? normalizeUsPhone(phoneText) : "";
     const mobilePhone = mobileText.trim() ? normalizeUsPhone(mobileText) : "";
@@ -95,18 +104,29 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
       hue: contact ? draft.hue : hueForName(name),
       updatedAt: now,
     };
-    setContacts(await window.contacts.upsertContact(next));
-    showToast(isNew ? `Added ${name}` : `Saved ${name}`);
-    onClose();
+    setSaving(true);
+    try {
+      setContacts(await window.contacts.upsertContact(next));
+      showToast(isNew ? `Added ${name}` : `Saved ${name}`);
+      onClose();
+    } catch (err) { setError(err instanceof Error ? err.message : "Could not save this contact. Your draft is still here."); }
+    finally { setSaving(false); }
   };
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isNew ? "Add contact" : `Edit ${contact.name}`}</DialogTitle>
-          <DialogDescription>Phone numbers are stored as US numbers. Photos are copied into the widget's own folder.</DialogDescription>
+          <DialogTitle>{signature ? "Review signature details" : isNew ? "Add contact" : `Edit ${contact.name}`}</DialogTitle>
+          <DialogDescription>{signature ? "These are suggestions. Check the name, company, email and Office/Cell numbers, then choose your call and text stars. Nothing is added until you confirm." : "Phone numbers are stored as US numbers. Photos are copied into the widget's own folder."}</DialogDescription>
         </DialogHeader>
+
+        {signature ? <div className="space-y-2 rounded-lg border bg-muted/30 p-3 text-xs">
+          {signature.warnings.length ? <ul className="list-disc space-y-1 pl-4">{signature.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul> : null}
+          <details><summary className="cursor-pointer font-medium">Original signature</summary><pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words font-sans text-muted-foreground">{signature.source}</pre></details>
+          {duplicate ? <p role="status">This email already belongs to <strong>{duplicate.name}</strong>. {onOpenExisting ? <button className="underline" onClick={() => onOpenExisting(duplicate)}>Edit that contact instead</button> : null} Adding here creates a separate contact.</p>
+            : sharedNumber ? <p role="status">This phone number also appears on <strong>{sharedNumber.name}</strong>. It may be a shared office line; check before adding.</p> : null}
+        </div> : null}
 
         <div className="grid grid-cols-[auto_1fr] gap-5">
           <div
@@ -170,7 +190,8 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
               <p className="text-[11px] text-muted-foreground">Stars choose the default for calls and texts.</p>
             </div>
             <Field label="Email">
-              <Input value={draft.email ?? ""} onChange={(e) => set("email", e.target.value)} placeholder="jane@acme.com" inputMode="email" />
+              <Input list={signature ? "signature-emails" : undefined} value={draft.email ?? ""} onChange={(e) => set("email", e.target.value)} placeholder="jane@acme.com" inputMode="email" />
+              {signature ? <datalist id="signature-emails">{signature.emails.map(email => <option key={email} value={email} />)}</datalist> : null}
             </Field>
             <Field label="Group / tag">
               <Input list="contact-groups" value={draft.group ?? ""} onChange={(e) => set("group", e.target.value)} placeholder="Lenders, Brokers, Internal…" />
@@ -204,7 +225,7 @@ export function ContactForm({ contact, onClose }: { contact: Contact | null; onC
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => void submit()}>{isNew ? "Add contact" : "Save changes"}</Button>
+          <Button disabled={saving} onClick={() => void submit()}>{saving ? "Saving…" : duplicate ? "Add separate contact" : isNew ? "Add contact" : "Save changes"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
