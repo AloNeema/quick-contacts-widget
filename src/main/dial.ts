@@ -5,7 +5,6 @@ import type { DialerProvider } from "@shared/types";
 type Result = { ok: true; message?: string } | { ok: false; error: string };
 interface DialServices {
   openExternal(uri: string): Promise<Result>;
-  openTalkdesk(phone: string): Promise<void>;
   copy(phone: string): void;
   recordUse(id: string | undefined): Promise<void>;
 }
@@ -14,12 +13,10 @@ export async function dispatchDial(provider: DialerProvider, req: DialRequest, s
   try {
     if (provider.id === "talkdesk") {
       fillPhoneTemplate("{e164}", req.phone);
-      if (req.action === "sms") {
-        services.copy(req.phone);
-        return { ok: true, message: "Number copied. Paste it into Talkdesk SMS. No message was sent." };
-      }
-      await services.openTalkdesk(req.phone);
-      return { ok: true, message: "Use the Talkdesk extension in Chrome to place the call." };
+      services.copy(req.phone);
+      return { ok: true, message: req.action === "sms"
+        ? "Number copied. Paste it into Talkdesk SMS. No message was sent."
+        : "Number copied. Paste it into the Talkdesk dialer." };
     }
     const result = await services.openExternal(buildDialUri(provider, req.action, req.phone));
     if (result.ok) await services.recordUse(req.contactId);

@@ -2,8 +2,8 @@ import { app, BrowserWindow, clipboard, ipcMain, shell } from "electron";
 import { z } from "zod";
 import { IPC } from "@shared/ipc";
 import { buildLinkedinUri, buildMailtoUri } from "@shared/dialer";
-import { openTalkdeskCall } from "./talkdesk";
 import { dispatchDial } from "./dial";
+import { backupAction, backupStatus } from "./backupActions";
 import { mergeContacts, moveContactTo, recordContactUse } from "@shared/merge";
 import type { Contact, IncomingContact, MergeOptions, Settings } from "@shared/types";
 import { contactSchema, getState, patchSettings, setContacts, settingsPatchSchema } from "./store";
@@ -77,6 +77,8 @@ async function openExternalSafe(uri: string): Promise<Result> {
 }
 
 export function registerIpc(): void {
+  ipcMain.handle(IPC.backupStatus, () => backupStatus());
+  ipcMain.handle(IPC.backupAction, (_e, action: unknown) => backupAction(z.enum(["save", "restore", "regular", "folder"]).parse(action)));
   ipcMain.handle(IPC.stateGet, () => {
     const s = getState();
     return { settings: s.settings, contacts: s.contacts, photosBaseUrl: photosBaseUrl(), platform: process.platform, version: app.getVersion() };
@@ -198,7 +200,6 @@ export function registerIpc(): void {
     const req = z.object({ action: z.enum(["call", "sms"]), phone: z.string(), contactId: z.string().optional() }).parse(raw);
     return dispatchDial(getState().settings.dialer, req, {
       openExternal: openExternalSafe,
-      openTalkdesk: openTalkdeskCall,
       copy: phone => clipboard.writeText(phone),
       recordUse,
     });

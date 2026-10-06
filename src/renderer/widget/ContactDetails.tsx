@@ -61,7 +61,7 @@ export function ContactDetails({ contact }: { contact: Contact }) {
         {call && text ? (
           <>
             <button type="button" className="fu-btn fu-btn-primary" title={formatPhoneForDisplay(call.phone)} onClick={() => void window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }).then((r) => { if (!r.ok) showToast(r.error, "error"); else if (r.message) showToast(r.message); })}>
-              <Phone className="h-3 w-3" /> {talkdesk ? "Call via Chrome" : "Call"} {call.label}
+              <Phone className="h-3 w-3" /> {talkdesk ? "Copy for call" : "Call"} {call.label}
             </button>
             <button type="button" className="fu-btn" title={formatPhoneForDisplay(text.phone)} onClick={() => void window.contacts.dial({ action: "sms", phone: text.phone, contactId: contact.id }).then((r) => { if (!r.ok) showToast(r.error, "error"); else if (r.message) showToast(r.message); })}>
               {talkdesk ? <Copy className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />} {talkdesk ? "Copy for text" : "Text"} {text.label}

@@ -3,7 +3,7 @@ import type { Appearance, DialerProvider, ClientSettings, M365Settings, Salesfor
 export const DIALER_PRESETS: Record<Exclude<DialerProvider["id"], "custom">, DialerProvider> = {
   talkdesk: {
     id: "talkdesk",
-    label: "Talkdesk pilot (Chrome)",
+    label: "Talkdesk (copy number)",
     callTemplate: "",
     smsTemplate: "",
   },

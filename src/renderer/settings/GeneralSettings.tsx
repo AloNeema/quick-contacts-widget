@@ -6,6 +6,7 @@ import { Label } from "@renderer/components/ui/label";
 import { DEFAULT_HOTKEY } from "@shared/defaults";
 import { Switch } from "@renderer/components/ui/switch";
 import { useContactsStore } from "@renderer/store/useContacts";
+import { BackupSettings } from "./BackupSettings";
 
 export function GeneralSettings() {
   const settings = useContactsStore((s) => s.settings);
@@ -50,6 +51,7 @@ export function GeneralSettings() {
 
   return (
     <div className="max-w-xl space-y-6 pt-2">
+      <BackupSettings />
       <Toggle
         label="Keep widget on top"
         hint="Floats above other windows. Off by default so it behaves like a desktop gadget."
@@ -69,7 +71,7 @@ export function GeneralSettings() {
         </div>
         <p className="text-xs text-muted-foreground">
           Press it anywhere in Windows to pop the widget up with the search box focused. Type a name, then <kbd>Enter</kbd> calls the top match,
-          <kbd> Alt+Enter</kbd> texts, <kbd>Shift+Enter</kbd> emails, <kbd>Esc</kbd> hides.
+          <kbd> Alt+Enter</kbd> texts, <kbd>Shift+Enter</kbd> emails, <kbd>Esc</kbd> hides. With Talkdesk, Enter and Alt+Enter copy the preferred number.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Input

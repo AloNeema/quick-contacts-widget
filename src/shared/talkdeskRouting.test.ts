@@ -4,17 +4,16 @@ import { DIALER_PRESETS } from "./defaults";
 
 const services = () => ({
   openExternal: vi.fn(async () => ({ ok: true as const })),
-  openTalkdesk: vi.fn(async () => undefined),
   copy: vi.fn(),
   recordUse: vi.fn(async () => undefined),
 });
 const request = { phone: "+12025550123", contactId: "test-contact" };
 
 describe("Talkdesk action routing", () => {
-  it("hands calls to Chrome without calling an OS dialer or recording a completed contact", async () => {
+  it("copies calling numbers without opening a browser, dialing or recording a completed contact", async () => {
     const deps = services();
     expect(await dispatchDial(DIALER_PRESETS.talkdesk, { ...request, action: "call" }, deps)).toMatchObject({ ok: true });
-    expect(deps.openTalkdesk).toHaveBeenCalledWith(request.phone);
+    expect(deps.copy).toHaveBeenCalledWith(request.phone);
     expect(deps.openExternal).not.toHaveBeenCalled();
     expect(deps.recordUse).not.toHaveBeenCalled();
   });
@@ -22,7 +21,6 @@ describe("Talkdesk action routing", () => {
     const deps = services();
     expect(await dispatchDial(DIALER_PRESETS.talkdesk, { ...request, action: "sms" }, deps)).toMatchObject({ ok: true, message: expect.stringContaining("No message was sent") });
     expect(deps.copy).toHaveBeenCalledWith(request.phone);
-    expect(deps.openTalkdesk).not.toHaveBeenCalled();
     expect(deps.openExternal).not.toHaveBeenCalled();
     expect(deps.recordUse).not.toHaveBeenCalled();
   });
@@ -30,12 +28,11 @@ describe("Talkdesk action routing", () => {
     const deps = services();
     expect(await dispatchDial(DIALER_PRESETS.talkdesk, { ...request, phone: "bad", action: "sms" }, deps)).toMatchObject({ ok: false });
     expect(deps.copy).not.toHaveBeenCalled();
-    expect(deps.openTalkdesk).not.toHaveBeenCalled();
   });
-  it("reports Chrome errors and never falls back to a different dialer", async () => {
+  it("reports clipboard errors and never falls back to a different dialer", async () => {
     const deps = services();
-    deps.openTalkdesk.mockRejectedValueOnce(new Error("Chrome unavailable"));
-    expect(await dispatchDial(DIALER_PRESETS.talkdesk, { ...request, action: "call" }, deps)).toEqual({ ok: false, error: "Chrome unavailable" });
+    deps.copy.mockImplementationOnce(() => { throw new Error("Clipboard unavailable"); });
+    expect(await dispatchDial(DIALER_PRESETS.talkdesk, { ...request, action: "call" }, deps)).toEqual({ ok: false, error: "Clipboard unavailable" });
     expect(deps.openExternal).not.toHaveBeenCalled();
     expect(deps.recordUse).not.toHaveBeenCalled();
   });
@@ -44,6 +41,5 @@ describe("Talkdesk action routing", () => {
     expect(await dispatchDial(DIALER_PRESETS.ringcentral, { ...request, action: "call" }, deps)).toEqual({ ok: true });
     expect(deps.openExternal).toHaveBeenCalledWith("rcapp://r/call?number=%2B12025550123");
     expect(deps.recordUse).toHaveBeenCalledWith(request.contactId);
-    expect(deps.openTalkdesk).not.toHaveBeenCalled();
   });
 });

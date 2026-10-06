@@ -31,6 +31,7 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   const contacts = useContactsStore((s) => s.contacts);
   const m365 = useContactsStore((s) => s.m365);
   const cfg = useContactsStore((s) => s.settings.clients);
+  const talkdesk = useContactsStore((s) => s.settings.dialer.id === "talkdesk");
   const showToast = useContactsStore((s) => s.showToast);
   const [menu, setMenu] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -140,7 +141,7 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
           </button>
           {call && contact ? (
             <button type="button" className="fu-btn" onClick={() => void run(window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }))}>
-              <Phone className="h-3 w-3" /> Call
+              <Phone className="h-3 w-3" /> {talkdesk ? "Copy for call" : "Call"}
             </button>
           ) : null}
           {contact ? (

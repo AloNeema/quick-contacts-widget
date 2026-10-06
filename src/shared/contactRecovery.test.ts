@@ -25,6 +25,25 @@ async function seed(contacts: unknown[], settings: unknown = DEFAULT_SETTINGS) {
 }
 
 describe("legacy contact recovery", () => {
+  it("preserves integration configuration when an unrelated setting is invalid", async () => {
+    const settings = structuredClone(DEFAULT_SETTINGS);
+    settings.m365.clientId = "keep-app-id";
+    settings.salesforce.consumerKey = "keep-consumer-key";
+    await seed([], { ...settings, appearance: { opacity: 99 } });
+    const store = await import("../main/store");
+    const state = await store.loadState();
+    expect(state.settings.m365.clientId).toBe("keep-app-id");
+    expect(state.settings.salesforce.consumerKey).toBe("keep-consumer-key");
+    expect(state.settings.appearance).toEqual(DEFAULT_SETTINGS.appearance);
+  });
+  it("refuses to replace unreadable JSON with an empty setup", async () => {
+    const raw = '{"settings":';
+    await fs.writeFile(path.join(profile.directory, "state.json"), raw);
+    const store = await import("../main/store");
+    await expect(store.loadState()).rejects.toThrow(/left in place/);
+    expect(() => store.getState()).toThrow(/not loaded/);
+    expect(await fs.readFile(path.join(profile.directory, "state.json"), "utf8")).toBe(raw);
+  });
   it("retains oversized imported contacts, backs up full fields, and survives another restart", async () => {
     const contact = {
       ...createContact({ name: "Sample", website: "w".repeat(301), group: "g".repeat(61), notes: "n".repeat(2001), phone: "+12025550101", mobilePhone: "+12025550102" }, 0),

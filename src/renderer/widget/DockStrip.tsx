@@ -9,6 +9,7 @@ import { ResizeGrip } from "./ResizeGrip";
 /** Slim edge-docked column of avatars. Hovering anywhere expands into the full panel. */
 export function DockStrip({ contacts, photosBaseUrl, side, onUndock }: { contacts: Contact[]; photosBaseUrl: string; side: "left" | "right"; onUndock: () => void }) {
   const presence = useContactsStore((s) => s.presence);
+  const talkdesk = useContactsStore((s) => s.settings.dialer.id === "talkdesk");
   const showToast = useContactsStore((s) => s.showToast);
   const call = (c: Contact, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -30,7 +31,7 @@ export function DockStrip({ contacts, photosBaseUrl, side, onUndock }: { contact
             <TooltipTrigger asChild>
               <button
                 type="button"
-                aria-label={`Call ${c.name}`}
+                aria-label={`${talkdesk ? "Copy calling number for" : "Call"} ${c.name}`}
                 onClick={(e) => void call(c, e)}
                 className="shrink-0 rounded-full transition-transform duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >

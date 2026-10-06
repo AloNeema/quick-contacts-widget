@@ -7,6 +7,7 @@ import { Avatar } from "./Avatar";
 
 /** The people you actually contact, newest first. Click to call, Alt-click to text, Shift-click to email. */
 export function RecentsStrip({ contacts, photosBaseUrl }: { contacts: Contact[]; photosBaseUrl: string }) {
+  const talkdesk = useContactsStore((s) => s.settings.dialer.id === "talkdesk");
   const showToast = useContactsStore((s) => s.showToast);
   const presence = useContactsStore((s) => s.presence);
 
@@ -31,7 +32,7 @@ export function RecentsStrip({ contacts, photosBaseUrl }: { contacts: Contact[];
               <button
                 type="button"
                 onClick={(e) => void act(c, e)}
-                aria-label={`Call ${c.name}`}
+                aria-label={`${talkdesk ? "Copy calling number for" : "Call"} ${c.name}`}
                 className="group/recent flex w-14 shrink-0 flex-col items-center gap-1 rounded-xl py-1 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
                 <Avatar contact={c} photosBaseUrl={photosBaseUrl} size={38} presence={c.m365?.kind === "user" ? presence[c.m365.id] : undefined} />

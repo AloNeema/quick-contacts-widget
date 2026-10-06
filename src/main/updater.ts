@@ -57,8 +57,8 @@ export function getUpdateStatus(): UpdateStatus {
 export async function initUpdater(onChange: (s: UpdateStatus) => void): Promise<void> {
   notify = onChange;
   status.hasToken = Boolean(await readToken());
-  if (!app.isPackaged) {
-    set({ state: "disabled", error: "Updates only run in the installed app." });
+  if (!app.isPackaged || app.getVersion().includes("-")) {
+    set({ state: "disabled", error: "Preview and development builds are updated manually; their saved setup is kept." });
     return;
   }
   wire();
@@ -68,13 +68,13 @@ export async function initUpdater(onChange: (s: UpdateStatus) => void): Promise<
 function schedule(): void {
   if (timer) clearInterval(timer);
   timer = null;
-  if (!app.isPackaged || !getState().settings.autoUpdate) return;
+  if (!app.isPackaged || app.getVersion().includes("-") || !getState().settings.autoUpdate) return;
   setTimeout(() => void checkForUpdates(false), 15_000);
   timer = setInterval(() => void checkForUpdates(false), CHECK_INTERVAL_MS);
 }
 
 export async function checkForUpdates(manual: boolean): Promise<UpdateStatus> {
-  if (!app.isPackaged) return set({ state: "disabled", error: "Updates only run in the installed app." });
+  if (!app.isPackaged || app.getVersion().includes("-")) return set({ state: "disabled", error: "Preview and development builds are updated manually; their saved setup is kept." });
   if (!manual && !getState().settings.autoUpdate) return status;
   wire();
   const token = await readToken();
