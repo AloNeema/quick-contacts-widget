@@ -1,7 +1,7 @@
 {
   "name": "qcf-contacts-widget",
   "productName": "QCF Contacts",
-  "version": "0.1.4-beta.2",
+  "version": "0.1.4-beta.3",
   "description": "Transparent desktop widget with quick Call / Text / Email actions for your key work contacts.",
   "private": true,
   "main": "./out/main/index.js",
