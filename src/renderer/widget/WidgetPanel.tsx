@@ -183,15 +183,10 @@ export function WidgetPanel() {
               </HeaderButton>
             </>
           )}
-          {dock.enabled ? (
-            <HeaderButton label="Collapse to contact bar" onClick={collapseDock}>
-              {dock.side === "right" ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
-            </HeaderButton>
-          ) : null}
           <HeaderButton label="Settings" onClick={() => void window.contacts.openSettings()}>
             <Settings2 className="h-3.5 w-3.5" />
           </HeaderButton>
-          <HeaderButton label="Hide (reopen from the tray)" onClick={() => void window.contacts.hideWidget()}>
+          <HeaderButton label={dock.enabled ? "Collapse to contact bar" : "Hide (reopen from the tray)"} onClick={dock.enabled ? collapseDock : () => void window.contacts.hideWidget()}>
             <X className="h-3.5 w-3.5" />
           </HeaderButton>
         </header>
