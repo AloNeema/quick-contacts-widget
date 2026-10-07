@@ -50,7 +50,13 @@ export function WidgetPanel() {
   const clients = useContactsStore((s) => s.clients);
   const m365SignedIn = useContactsStore((s) => s.m365.signedIn);
   const waitingCount = clients.items.filter((i) => i.waitingOnYou).length;
-  useEffect(() => window.contacts.onShowTab((t) => setTab(t)), []);
+  useEffect(() => window.contacts.onShowTab((t) => {
+    setTab(t);
+    if (dock.enabled) {
+      setDockExpanded(true);
+      void window.contacts.dockExpand(true);
+    }
+  }), [dock.enabled]);
   // Narrow widget: fold the secondary header toggles into a menu so the tabs never collide with them.
   const [narrow, setNarrow] = useState(() => window.innerWidth < 330);
   useEffect(() => {
@@ -63,20 +69,19 @@ export function WidgetPanel() {
     setClientFilter("waiting");
     setTab("clients");
   };
-  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const expandDock = () => {
-    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+  const expandDock = (contactId?: string) => {
+    if (contactId) {
+      setTab("contacts");
+      setOpenId(contactId);
+    }
     if (!dock.enabled || dockExpanded) return;
     setDockExpanded(true);
     void window.contacts.dockExpand(true);
   };
-  const collapseDockSoon = () => {
-    if (!dock.enabled) return;
-    if (collapseTimer.current) clearTimeout(collapseTimer.current);
-    collapseTimer.current = setTimeout(() => {
-      setDockExpanded(false);
-      void window.contacts.dockExpand(false);
-    }, 550);
+  const collapseDock = () => {
+    setMoreOpen(false);
+    setDockExpanded(false);
+    void window.contacts.dockExpand(false);
   };
   useEffect(() => {
     if (!dock.enabled) setDockExpanded(false);
@@ -91,10 +96,15 @@ export function WidgetPanel() {
   useEffect(
     () =>
       window.contacts.onFocusSearch(() => {
+        setTab("contacts");
         setQuery("");
+        if (dock.enabled) {
+          setDockExpanded(true);
+          void window.contacts.dockExpand(true);
+        }
         requestAnimationFrame(() => searchRef.current?.focus());
       }),
-    [],
+    [dock.enabled],
   );
   const compact = settings.appearance.density === "compact";
   const acrylic = settings.appearance.acrylic && ["win32", "darwin"].includes(useContactsStore.getState().platform);
@@ -109,14 +119,14 @@ export function WidgetPanel() {
 
   if (dock.enabled && !dockExpanded) {
     return (
-      <div className="h-full w-full" onMouseEnter={expandDock}>
-        <DockStrip contacts={visible} photosBaseUrl={photosBaseUrl} side={dock.side} onUndock={toggleDock} />
+      <div className="h-full w-full">
+        <DockStrip contacts={visible} photosBaseUrl={photosBaseUrl} side={dock.side} onExpand={expandDock} onUndock={toggleDock} />
       </div>
     );
   }
 
   return (
-    <div className={cn("h-full w-full", acrylic || dock.enabled ? "p-0" : "p-2")} onMouseEnter={expandDock} onMouseLeave={collapseDockSoon}>
+    <div className={cn("h-full w-full", acrylic || dock.enabled ? "p-0" : "p-2")}>
       <div className="glass-panel flex h-full w-full flex-col">
         {/* Header: the only drag region */}
         <header className={cn("relative z-10 flex items-center gap-2 px-3.5 pb-1.5 pt-3.5", dock.enabled ? "no-drag" : "drag")}>
@@ -176,7 +186,7 @@ export function WidgetPanel() {
           <HeaderButton label="Settings" onClick={() => void window.contacts.openSettings()}>
             <Settings2 className="h-3.5 w-3.5" />
           </HeaderButton>
-          <HeaderButton label="Hide (reopen from the tray)" onClick={() => void window.contacts.hideWidget()}>
+          <HeaderButton label={dock.enabled ? "Collapse to contact bar" : "Hide (reopen from the tray)"} onClick={dock.enabled ? collapseDock : () => void window.contacts.hideWidget()}>
             <X className="h-3.5 w-3.5" />
           </HeaderButton>
         </header>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
+import { ClipboardPaste, Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
 import type { Contact } from "@shared/types";
 import { filterContacts, normalizeOrder } from "@shared/merge";
 import { ContactDragHandle, useContactReorder } from "@renderer/hooks/useContactReorder";
@@ -10,6 +10,8 @@ import { Avatar } from "@renderer/widget/Avatar";
 import { QuickActions } from "@renderer/widget/QuickActions";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { ContactForm } from "./ContactForm";
+import { SignaturePaste } from "./SignaturePaste";
+import type { SignatureDraft } from "@shared/signature";
 
 export function ContactsEditor() {
   const contacts = useContactsStore((s) => s.contacts);
@@ -19,6 +21,8 @@ export function ContactsEditor() {
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Contact | "new" | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Contact | null>(null);
+  const [pasting, setPasting] = useState(false);
+  const [signature, setSignature] = useState<SignatureDraft | undefined>();
 
   const visible = useMemo(() => filterContacts(contacts, query), [contacts, query]);
   const reorder = useContactReorder(visible, "manual");
@@ -36,12 +40,15 @@ export function ContactsEditor() {
 
   return (
     <div className="space-y-4 pt-2">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a contact" className="pl-8" />
         </div>
-        <Button onClick={() => setEditing("new")}>
+        <Button variant="outline" onClick={() => setPasting(true)}>
+          <ClipboardPaste /> Paste signature
+        </Button>
+        <Button onClick={() => { setSignature(undefined); setEditing("new"); }}>
           <Plus /> Add contact
         </Button>
       </div>
@@ -87,7 +94,8 @@ export function ContactsEditor() {
         </ul>
       )}
 
-      {editing ? <ContactForm contact={editing === "new" ? null : editing} onClose={() => setEditing(null)} /> : null}
+      {pasting ? <SignaturePaste onClose={() => setPasting(false)} onReview={draft => { setSignature(draft); setPasting(false); setEditing("new"); }} /> : null}
+      {editing ? <ContactForm key={editing === "new" ? "new" : editing.id} contact={editing === "new" ? null : editing} signature={signature} onClose={() => { setEditing(null); setSignature(undefined); }} onOpenExisting={c => { setSignature(undefined); setEditing(c); }} /> : null}
 
       {confirmDelete ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" role="dialog" aria-modal>

@@ -79,7 +79,7 @@ export function AppearanceSettings() {
           </Button>
         </div>
       </Row>
-      <Row label="Dock to screen edge" hint="Collapses the widget into a slim strip of avatars on one edge of the screen; it expands when you hover and stays above other windows.">
+      <Row label="Dock to screen edge" hint="Collapses the widget into a slim strip of avatars that stays above other windows. Click an avatar or the expand arrow to open it; click Collapse to tuck it away.">
         <div className="flex items-center gap-3">
           <Switch checked={dock.enabled} onCheckedChange={(v) => void updateSettings({ dock: { ...dock, enabled: v } })} />
           <div className="flex gap-2">

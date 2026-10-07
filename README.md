@@ -4,6 +4,10 @@ A transparent, frameless Windows widget that floats on your desktop with your ke
 
 ![icon](resources/icon.png)
 
+## Paste an email signature
+
+Version 0.1.4-beta.4 adds **Settings → Contacts → Paste signature**. Copy one person's signature text from Outlook, paste it, and choose **Review contact**. Name, title, company, email, labeled Office/Cell numbers, website and LinkedIn are suggested locally; edit everything and choose the call/text stars before **Add contact**. Ambiguous numbers and possible existing contacts are flagged. Fax numbers are excluded; extensions go in Notes. Nothing is saved by parsing or canceling, and existing contacts are never merged automatically. Image-only signatures and non-US-format numbers need manual entry. No AI service or API key is required. See [signature import](docs/SIGNATURE-IMPORT.md).
+
 ## Talkdesk preview
 
 Version 0.1.4-beta.3 simplifies **Talkdesk** to **Copy for call** and **Copy for text**. Paste the starred number into Workspace Desktop. No browser page is opened and copying does not update contact history. Settings → General now includes **Save backup**, **Restore backup**, automatic checkpoints and **Copy setup from regular app** in previews. Backups preserve Microsoft app ID/tenant, Salesforce consumer key, contacts, preferences, images and Clients hide/not-client choices. Sign-ins and the updater token are not exported. Preview builds use a separate **QCF Contacts Preview** profile, leave the regular app's OS startup setting unchanged and are updated manually. Use the portable preview for testing; the installer still shares the regular app's identity. See [setup and testing](docs/TALKDESK-PILOT.md).
@@ -26,7 +30,7 @@ Version 0.1.4-beta.3 simplifies **Talkdesk** to **Copy for call** and **Copy for
 - **Salesforce**: connect your own Connected App; sync links contacts by email to Salesforce Contacts or Leads and shows the top open opportunity's stage and amount under the name, with the full list and record links in the drawer.
 - **Clients tab**: reads your Outlook Inbox and Sent Items (last 60 days by default, every 15 minutes) and lists people outside the company who look like clients, newest contact first. Anyone in Salesforce as a Contact or open Lead counts automatically; otherwise it takes two or more of: replied to your email, sent attachments, emailed more than once, or a back-and-forth. Coworkers, your lender list (Settings, plus any contact in a "Lenders" group), no-reply senders, newsletters and calendar replies never appear. Each row shows why, flags "Waiting on you" when they wrote last, and has Reply, Call, Keep (add to contacts) and an X to remove them (they return only if they email again; "Not a client" hides them for good). The tab badge counts clients added since you last opened it.
 - **Sort**: the sort button beside search orders the list by your own order, A to Z, recently contacted, or most contacted (calls, texts and emails from the widget). Pinned contacts stay on top.
-- **Dock mode**: collapse to a slim strip of avatars on the left or right screen edge; it expands when you hover and shrinks back when you leave.
+- **Dock mode**: collapse to a slim strip of avatars on the left or right screen edge. Click the expand arrow to open the panel, or an avatar to open that contact’s details. Hovering never expands it; click **Collapse to contact bar** to shrink it again. The search hotkey and tray Clients command also open the panel.
 
 ## macOS (Apple Silicon and Intel)
 
