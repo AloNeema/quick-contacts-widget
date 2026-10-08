@@ -146,3 +146,13 @@ describe("email message shortcuts", () => {
     expect(client.webLink).toBeUndefined();
   });
 });
+
+describe("desktop email selection", () => {
+  it("pairs the desktop message ID with the latest subject and body preview", () => {
+    const [client] = buildCandidates([
+      m({ id: "old-id", direction: "in", at: "2026-10-01T01:00:00Z", from: { address: "client@shop.com" }, subject: "Old" }),
+      m({ id: "latest-id", direction: "out", at: "2026-10-02T01:00:00Z", to: [{ address: "client@shop.com" }], subject: "Follow-up", preview: "Checking in" }),
+    ], opts);
+    expect(client).toMatchObject({ lastMessageId: "latest-id", lastSubject: "Follow-up", lastPreview: "Checking in", lastDirection: "out" });
+  });
+});

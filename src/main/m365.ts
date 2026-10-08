@@ -491,3 +491,18 @@ export function schedulePresence(): void {
   void pollPresence();
   presenceTimer = setInterval(() => void pollPresence(), PRESENCE_INTERVAL_MS);
 }
+
+/** Convert this mailbox's Graph message ID for Classic Outlook's existing-item API. */
+export async function desktopMessageEntryId(messageId: string): Promise<{ entryId: string; addresses: string[] }> {
+  const accessToken = await token();
+  if (!accessToken) throw new Error("Sign in to Microsoft 365 again before opening this email.");
+  const translated = await graph<{ value: Array<{ sourceId?: string; targetId?: string }> }>(accessToken, "/me/translateExchangeIds", {
+    method: "POST",
+    body: JSON.stringify({ inputIds: [messageId], sourceIdType: "restId", targetIdType: "entryId" }),
+  });
+  const entryId = translated?.value.find(result => result.sourceId === messageId)?.targetId;
+  if (!entryId) throw new Error("This message may have moved. Check your inbox in the widget, then try again.");
+  const addresses = await myMailAddresses();
+  if (!addresses.length) throw new Error("Could not identify the Microsoft mailbox. Try signing in again.");
+  return { entryId, addresses };
+}

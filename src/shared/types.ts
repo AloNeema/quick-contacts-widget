@@ -220,6 +220,8 @@ export interface ClientCandidate {
   /** Latest message either way; the list is sorted by this. */
   lastActivityAt: string;
   lastSubject: string;
+  /** Graph ID of exactly the message shown by lastSubject/lastPreview. */
+  lastMessageId?: string;
   lastPreview?: string;
   lastDirection: "in" | "out";
   webLink?: string;

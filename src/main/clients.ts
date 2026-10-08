@@ -1,3 +1,5 @@
+import { desktopMessageEntryId } from "./m365";
+import { openInClassicOutlook } from "./outlookDesktop";
 /**
  * Clients service: every 15 minutes while signed in to Microsoft 365, read
  * recent Inbox and Sent Items, keep the people who look like clients (see
@@ -173,4 +175,20 @@ export async function addClientContact(email: string): Promise<Contact[]> {
 /** Contacts changed (new contact, group edits): recompute without rescanning. */
 export function contactsChangedForClients(): void {
   if (loaded) emit();
+}
+
+/** Resolve only a listed client's selected message, not arbitrary renderer-supplied IDs. */
+export async function openClientEmail(email: string, messageId: string, action: "open" | "reply"): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await load();
+    const item = getClientsState().items.find(client => client.email === email.toLowerCase());
+    if (!item || !item.lastMessageId || item.lastMessageId !== messageId) return { ok: false, error: "The inbox list changed or needs a refresh. Check your inbox, then click the email again." };
+    const converted = await desktopMessageEntryId(messageId);
+    // Sent-mail follow-ups retain the other participants rather than replying only to yourself.
+    const desktopAction = action === "reply" && item.lastDirection === "out" ? "replyAll" : action;
+    await openInClassicOutlook(converted.entryId, converted.addresses, desktopAction);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not open this email in Classic Outlook." };
+  }
 }

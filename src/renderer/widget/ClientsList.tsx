@@ -35,6 +35,8 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   const talkdesk = useContactsStore((s) => s.settings.dialer.id === "talkdesk");
   const sfInstance = useContactsStore((s) => s.sf.instanceUrl);
   const showToast = useContactsStore((s) => s.showToast);
+  const platform = useContactsStore((s) => s.platform);
+  const [opening, setOpening] = useState<string | null>(null);
   const [menu, setMenu] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const byId = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts]);
@@ -61,6 +63,27 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
     const r = await p;
     if (!r.ok) showToast(r.error, "error");
     else if (r.message) showToast(r.message);
+  };
+  const openEmail = async (item: ClientItem, action: "open" | "reply") => {
+    if (opening) return;
+    setOpening(item.email);
+    try {
+      if (platform === "win32") {
+        if (!item.lastMessageId) {
+          showToast("Check your inbox once to enable desktop Outlook links.", "error");
+          return;
+        }
+        await run(window.contacts.openClientEmail(item.email, item.lastMessageId, action));
+      } else if (item.webLink) {
+        await run(window.contacts.openLink(item.webLink));
+      } else {
+        showToast("This email link is unavailable. Check your inbox and try again.", "error");
+      }
+    } catch {
+      showToast("Could not open the email. Try again, or use Open email in browser in the three-dot menu.", "error");
+    } finally {
+      setOpening(null);
+    }
   };
   const mark = async (i: ClientItem, action: "hide" | "notClient") => {
     setMenu(null);
@@ -114,9 +137,9 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
                 {relativeTime(i.lastInboundAt ?? i.lastActivityAt).replace(" ago", "")}
               </span>
             </div>
-            {i.webLink ? (
-              <button type="button" onClick={() => void run(window.contacts.openLink(i.webLink!))}
-                title="Open this email in Outlook"
+            {i.webLink || i.lastMessageId ? (
+              <button type="button" disabled={opening !== null} onClick={() => void openEmail(i, "open")}
+                title={platform === "win32" ? "Open this email in Classic Outlook" : "Open this email in Outlook"}
                 aria-label={`Open email: ${i.lastSubject}`}
                 className="no-drag block w-full truncate text-left text-xs leading-snug text-foreground/90 hover:underline focus-visible:underline">
                 {i.lastSubject}
@@ -152,8 +175,8 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
           </button>
         </div>
         <div className={cn("mt-1.5 flex flex-wrap items-center gap-1.5", compact ? "pl-[44px]" : "pl-[48px]")}>
-          <button type="button" className="fu-btn fu-btn-primary" onClick={() => void (i.webLink ? run(window.contacts.openLink(i.webLink)) : run(window.contacts.email(i.email, contact?.id)))}>
-            <Reply className="h-3 w-3" /> Reply
+          <button type="button" className="fu-btn fu-btn-primary" disabled={opening !== null} title={platform === "win32" ? "Reply in Classic Outlook" : "Open email in Outlook to reply"} onClick={() => void openEmail(i, "reply")}>
+            {opening === i.email ? <Loader2 className="h-3 w-3 animate-spin" /> : <Reply className="h-3 w-3" />} Reply
           </button>
           {salesforceUrl ? (
             <button type="button" className="fu-btn" title="Open Salesforce contact or lead"
@@ -183,6 +206,11 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
         </div>
         {menu === i.email ? (
           <div role="group" aria-label={`Options for ${i.name}`} className="no-drag mt-2 rounded-xl border bg-popover p-1 text-popover-foreground">
+            {i.webLink ? (
+              <button type="button" className="menu-item" onClick={() => { setMenu(null); void run(window.contacts.openLink(i.webLink!)); }}>
+                <ExternalLink className="h-3.5 w-3.5" /> Open email in browser
+              </button>
+            ) : null}
             <button type="button" className="menu-item" onClick={() => void mark(i, "hide")}>
               <X className="h-3.5 w-3.5" /> Remove for now
             </button>

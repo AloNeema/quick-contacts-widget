@@ -98,6 +98,7 @@ export function buildCandidates(
       }
       c.lastActivityAt = m.at;
       c.lastSubject = m.subject || "(no subject)";
+      c.lastMessageId = m.id;
       c.lastPreview = m.preview;
       c.lastDirection = m.direction;
       // Keep the link paired with the displayed message, never an older email.
