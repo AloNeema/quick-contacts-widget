@@ -1,7 +1,7 @@
 {
   "name": "qcf-contacts-widget",
   "productName": "QCF Contacts",
-  "version": "0.1.4-beta.5",
+  "version": "0.1.4-beta.8",
   "description": "Transparent desktop widget with quick Call / Text / Email actions for your key work contacts.",
   "private": true,
   "main": "./out/main/index.js",
@@ -20,7 +20,8 @@
     "lint": "eslint .",
     "dist:win": "electron-vite build && electron-builder --win --config electron-builder.yml --publish never",
     "dist:mac": "electron-vite build && electron-builder --mac --config electron-builder.yml --publish never",
-    "dist:dir": "electron-vite build && electron-builder --dir --config electron-builder.yml --publish never"
+    "dist:dir": "electron-vite build && electron-builder --dir --config electron-builder.yml --publish never",
+    "test:appearance": "electron scripts/check-appearance.cjs"
   },
   "dependencies": {
     "@azure/msal-node": "^2.16.3",

@@ -109,3 +109,19 @@ Layout: `src/main` (Electron main: windows, tray, JSON store, photos, spreadshee
 Security posture: context isolation on, node integration off, a CSP in `index.html`, every IPC payload validated with zod in the main process, and `shell.openExternal` limited to `tel:`, `sms:`, `mailto:`, `rcapp:`, `msteams:`, `callto:`, `sip:`, `https://linkedin.com` and the scheme of a custom template.
 
 This is a standalone desktop app. It does not depend on the QCF Offer Tool web app; it talks to Microsoft 365, Salesforce and your dialer directly.
+
+## Automatic contact syncing (0.1.4-beta.6)
+
+Connected Microsoft 365 and Salesforce accounts sync shortly after launch or sign-in, every 30 minutes while the app is running (including in the tray), and shortly after the computer resumes from sleep. Sync now remains available; concurrent manual and automatic requests share the same in-flight operation. A temporary failure is retried on the next scheduled refresh. The Clients inbox scan keeps its separate 15-minute schedule. Quit stops syncing; an expired or revoked login can still require signing in again. No new app IDs, permissions or backup format changes are required.
+
+## Readable Clients and record shortcuts (0.1.4-beta.7)
+
+Dark and acrylic panel backgrounds now use valid color values with a minimum 86% opacity; new setups default to 90%. Solid menus and inline client options prevent text from other rows showing through. The opacity slider reports the effective value for older low-opacity settings.
+
+Clients show a two-line preview of the latest email. Click its subject to open that same message in Outlook. Salesforce buttons open matched Contacts or Leads, including inbox clients not yet saved to the widget. Inbox-only record shortcuts appear after the next inbox scan. Existing contact detail cards also offer the Salesforce shortcut before deal loading finishes.
+
+## Classic Outlook desktop opening (0.1.4-beta.8)
+
+On Windows, clicking a Clients email subject opens the actual message in Classic Outlook; Reply opens its reply editor without sending. This uses Graph ID translation and Outlook's existing-item API, matching the signed-in mailbox to an Outlook account. Follow-ups to sent messages use Reply All to retain the conversation participants. Keep the same Microsoft account connected in both apps.
+
+New Outlook does not support this Classic Outlook automation path. The three-dot options retain an explicit Open email in browser action. Other platforms continue to use the web link. After upgrading, the next inbox scan adds message IDs needed for desktop opening. A moved message or unavailable Classic Outlook profile produces a retry message rather than silently opening a different email or a browser.

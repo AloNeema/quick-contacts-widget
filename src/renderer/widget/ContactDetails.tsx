@@ -3,6 +3,7 @@ import { Briefcase, CalendarClock, Copy, ExternalLink, Loader2, Mail, MessageSqu
 import type { Contact, ContactContext, SalesforceDeals } from "@shared/types";
 import { fmtMoney } from "./ContactRow";
 import { relativeTime } from "@shared/merge";
+import { salesforceRecordUrl } from "@shared/salesforceLinks";
 import { formatPhoneForDisplay, preferredPhone } from "@shared/phone";
 import { CopyField } from "./CopyField";
 import { useContactsStore } from "@renderer/store/useContacts";
@@ -29,6 +30,8 @@ export function ContactDetails({ contact }: { contact: Contact }) {
   const sfSignedIn = useContactsStore((s) => s.sf.signedIn);
   const [deals, setDeals] = useState<SalesforceDeals | null>(null);
   const sfId = contact.sf?.id;
+  const sfInstance = useContactsStore((s) => s.sf.instanceUrl);
+  const recordUrl = salesforceRecordUrl(sfInstance, sfId) ?? deals?.recordUrl;
   useEffect(() => {
     let alive = true;
     setDeals(null);
@@ -90,11 +93,11 @@ export function ContactDetails({ contact }: { contact: Contact }) {
         <div className="detail-card rounded-xl px-2.5 py-2">
           <div className="flex items-center gap-2">
             <Briefcase className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <button type="button" onClick={() => open(deals?.accountUrl ?? deals?.recordUrl)} className="min-w-0 flex-1 truncate text-left font-medium text-foreground/90 hover:underline underline-offset-2">
+            <button type="button" onClick={() => open(deals?.accountUrl ?? recordUrl)} className="min-w-0 flex-1 truncate text-left font-medium text-foreground/90 hover:underline underline-offset-2">
               {contact.sf.accountName ?? (contact.sf.kind === "lead" ? "Lead" : "Salesforce record")}
             </button>
-            <button type="button" onClick={() => open(deals?.recordUrl)} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground" disabled={!deals?.recordUrl}>
-              Open <ExternalLink className="h-3 w-3" />
+            <button type="button" onClick={() => open(recordUrl)} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground" disabled={!recordUrl} aria-label="Open Salesforce contact or lead">
+              Salesforce <ExternalLink className="h-3 w-3" />
             </button>
           </div>
           {deals === null && sfSignedIn ? (

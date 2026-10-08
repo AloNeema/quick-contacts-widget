@@ -35,7 +35,7 @@ export const CUSTOM_DIALER_TEMPLATE: DialerProvider = {
 };
 
 export const DEFAULT_APPEARANCE: Appearance = {
-  opacity: 0.38,
+  opacity: 0.90,
   blur: 28,
   accentHue: 212,
   theme: "dark",

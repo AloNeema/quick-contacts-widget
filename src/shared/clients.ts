@@ -98,9 +98,11 @@ export function buildCandidates(
       }
       c.lastActivityAt = m.at;
       c.lastSubject = m.subject || "(no subject)";
+      c.lastMessageId = m.id;
       c.lastPreview = m.preview;
       c.lastDirection = m.direction;
-      c.webLink = m.webLink ?? c.webLink;
+      // Keep the link paired with the displayed message, never an older email.
+      c.webLink = m.webLink;
       out.set(email, c);
     }
   }

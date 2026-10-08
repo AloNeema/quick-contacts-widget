@@ -62,7 +62,7 @@ export interface Contact {
 }
 
 export interface Appearance {
-  /** 0.2 - 1 panel background opacity. */
+  /** Legacy values below 0.86 render at the minimum readable opacity. */
   opacity: number;
   /** 0 - 40 px backdrop blur. */
   blur: number;
@@ -220,6 +220,8 @@ export interface ClientCandidate {
   /** Latest message either way; the list is sorted by this. */
   lastActivityAt: string;
   lastSubject: string;
+  /** Graph ID of exactly the message shown by lastSubject/lastPreview. */
+  lastMessageId?: string;
   lastPreview?: string;
   lastDirection: "in" | "out";
   webLink?: string;
@@ -233,7 +235,14 @@ export interface ClientCandidate {
 
 export type ClientReason = "salesforce" | "replied" | "attachments" | "repeat" | "conversation";
 
+export interface SalesforceRecordLink {
+  kind: "contact" | "lead";
+  id: string;
+  url: string;
+}
+
 export interface ClientItem extends ClientCandidate {
+  salesforceRecord?: SalesforceRecordLink;
   contactId?: string;
   inSalesforce: boolean;
   reasons: ClientReason[];

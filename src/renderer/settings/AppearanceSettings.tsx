@@ -10,6 +10,7 @@ const ACCENTS = [212, 262, 330, 160, 24, 45];
 
 export function AppearanceSettings() {
   const appearance = useContactsStore((s) => s.settings.appearance);
+  const panelOpacity = Math.max(86, Math.round(appearance.opacity * 100));
   const dock = useContactsStore((s) => s.settings.dock);
   const companyLogos = useContactsStore((s) => s.settings.companyLogos);
   const showToast = useContactsStore((s) => s.showToast);
@@ -46,8 +47,8 @@ export function AppearanceSettings() {
           ))}
         </div>
       </Row>
-      <Row label={`Panel opacity · ${Math.round(appearance.opacity * 100)}%`} hint="Lower is more see-through.">
-        <Slider min={20} max={100} step={1} value={[Math.round(appearance.opacity * 100)]} onValueChange={([v]) => set({ opacity: v / 100 })} />
+      <Row label={`Panel opacity · ${panelOpacity}%`} hint="A minimum of 86% keeps text readable. Menus and email detail cards use a solid background.">
+        <Slider min={86} max={100} step={1} value={[panelOpacity]} onValueChange={([v]) => set({ opacity: v / 100 })} />
       </Row>
       <Row label={`Blur · ${appearance.blur}px`} hint="Softens anything showing through the panel.">
         <Slider min={0} max={40} step={1} value={[appearance.blur]} onValueChange={([v]) => set({ blur: v })} />

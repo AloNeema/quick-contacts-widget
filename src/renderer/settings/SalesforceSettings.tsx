@@ -84,8 +84,9 @@ export function SalesforceSettings() {
           <div>
             <p className="text-sm font-medium">{status.signedIn ? `Connected${status.username ? ` as ${status.username}` : ""}` : "Not connected"}</p>
             <p className="text-xs text-muted-foreground">
-              {status.lastSyncAt ? `Last sync ${new Date(status.lastSyncAt).toLocaleString()} · ${linked} contacts linked` : linked ? `${linked} contacts linked` : "Connect, then sync to link contacts by email and show their open deals."}
+              {status.lastSyncAt ? `Last sync ${new Date(status.lastSyncAt).toLocaleString()} · ${linked} contacts linked` : linked ? `${linked} contacts linked` : "Connect to automatically link contacts by email and show their open deals."}
             </p>
+            <p className="mt-1 text-xs text-muted-foreground">Automatically syncs after sign-in, when the app opens, every 30 minutes while running, and after your computer wakes. Sync now is always available.</p>
             {status.lastError ? <p className="mt-1 text-xs text-destructive">{status.lastError}</p> : null}
           </div>
           <div className="flex gap-2">

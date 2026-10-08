@@ -1,3 +1,5 @@
+import { desktopMessageEntryId } from "./m365";
+import { openInClassicOutlook } from "./outlookDesktop";
 /**
  * Clients service: every 15 minutes while signed in to Microsoft 365, read
  * recent Inbox and Sent Items, keep the people who look like clients (see
@@ -10,9 +12,9 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { buildCandidates, computeClients, domainOf, excludedLenderDomains, stampFirstSeen } from "@shared/clients";
 import { createContact } from "@shared/merge";
-import type { ClientCandidate, ClientMark, ClientsState, Contact } from "@shared/types";
+import type { ClientCandidate, ClientMark, ClientsState, Contact, SalesforceRecordLink } from "@shared/types";
 import { fetchRecentMail, isM365SignedIn, myMailAddresses } from "./m365";
-import { isSalesforceSignedIn, salesforceEmailMatches } from "./salesforce";
+import { isSalesforceSignedIn, salesforceClientLinks } from "./salesforce";
 import { getState, setContacts } from "./store";
 
 const SCAN_EVERY_MS = 15 * 60 * 1000;
@@ -20,6 +22,7 @@ const SCAN_EVERY_MS = 15 * 60 * 1000;
 interface Persisted {
   candidates: ClientCandidate[];
   salesforce: string[];
+  salesforceLinks: Record<string, SalesforceRecordLink>;
   marks: Record<string, ClientMark>;
   /** email -> when they first made the client list (drives the "new" badge). */
   firstSeen: Record<string, string>;
@@ -27,7 +30,7 @@ interface Persisted {
   lastScanAt?: string;
 }
 
-let data: Persisted = { candidates: [], salesforce: [], marks: {}, firstSeen: {} };
+let data: Persisted = { candidates: [], salesforce: [], salesforceLinks: {}, marks: {}, firstSeen: {} };
 let loaded = false;
 let scanning = false;
 let lastError: string | undefined;
@@ -61,7 +64,8 @@ export function getClientsState(): ClientsState {
   const { settings, contacts } = getState();
   if (!settings.clients.enabled) return { items: [], newCount: 0, hiddenCount: 0, scanning: false, lastScanAt: data.lastScanAt };
   const { items, hiddenCount } = computeClients(data.candidates, contacts, data.marks, new Set(data.salesforce), data.firstSeen, data.lastViewedAt);
-  return { items, newCount: items.filter((i) => i.isNew).length, hiddenCount, lastScanAt: data.lastScanAt, scanning, error: lastError };
+  const linkedItems = items.map((item) => ({ ...item, salesforceRecord: data.salesforceLinks[item.email] }));
+  return { items: linkedItems, newCount: items.filter((i) => i.isNew).length, hiddenCount, lastScanAt: data.lastScanAt, scanning, error: lastError };
 }
 
 function emit(): ClientsState {
@@ -106,7 +110,8 @@ export async function scanClients(): Promise<ClientsState> {
     data.candidates = buildCandidates(messages, { myAddresses: mine, internalDomains: internal, lenderDomains: lenders });
     if (cfg.useSalesforce && isSalesforceSignedIn()) {
       try {
-        data.salesforce = [...(await salesforceEmailMatches(data.candidates.filter((c) => c.inboundCount > 0).map((c) => c.email)))];
+        data.salesforceLinks = await salesforceClientLinks(data.candidates.filter((c) => c.inboundCount > 0).map((c) => c.email));
+        data.salesforce = Object.keys(data.salesforceLinks);
       } catch (err) {
         console.warn("salesforce client lookup failed", err);
       }
@@ -170,4 +175,20 @@ export async function addClientContact(email: string): Promise<Contact[]> {
 /** Contacts changed (new contact, group edits): recompute without rescanning. */
 export function contactsChangedForClients(): void {
   if (loaded) emit();
+}
+
+/** Resolve only a listed client's selected message, not arbitrary renderer-supplied IDs. */
+export async function openClientEmail(email: string, messageId: string, action: "open" | "reply"): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await load();
+    const item = getClientsState().items.find(client => client.email === email.toLowerCase());
+    if (!item || !item.lastMessageId || item.lastMessageId !== messageId) return { ok: false, error: "The inbox list changed or needs a refresh. Check your inbox, then click the email again." };
+    const converted = await desktopMessageEntryId(messageId);
+    // Sent-mail follow-ups retain the other participants rather than replying only to yourself.
+    const desktopAction = action === "reply" && item.lastDirection === "out" ? "replyAll" : action;
+    await openInClassicOutlook(converted.entryId, converted.addresses, desktopAction);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not open this email in Classic Outlook." };
+  }
 }

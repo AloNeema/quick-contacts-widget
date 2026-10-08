@@ -17,6 +17,7 @@ import {
 } from "@azure/msal-node";
 import { M365_SCOPES } from "@shared/defaults";
 import { applySyncChanges } from "@shared/merge";
+import { singleFlight } from "@shared/autoSync";
 import type { MailMessageLite, ContactContext, M365Status, M365SyncSummary, PresenceAvailability, PresenceMap } from "@shared/types";
 import { getState, photosDir, setContacts } from "./store";
 
@@ -154,6 +155,7 @@ async function token(): Promise<string | null> {
 async function graph<T>(accessToken: string, url: string, init?: RequestInit): Promise<T | null> {
   const res = await fetch(url.startsWith("http") ? url : `${GRAPH}${url}`, {
     ...init,
+    signal: AbortSignal.timeout(30_000),
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
   if (res.status === 404) return null;
@@ -162,7 +164,7 @@ async function graph<T>(accessToken: string, url: string, init?: RequestInit): P
 }
 
 async function graphPhoto(accessToken: string, url: string): Promise<{ bytes: Buffer; ext: string } | null> {
-  const res = await fetch(`${GRAPH}${url}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const res = await fetch(`${GRAPH}${url}`, { signal: AbortSignal.timeout(30_000), headers: { Authorization: `Bearer ${accessToken}` } });
   if (!res.ok) return null;
   const type = res.headers.get("content-type") ?? "image/jpeg";
   const ext = type.includes("png") ? ".png" : type.includes("gif") ? ".gif" : ".jpg";
@@ -177,7 +179,17 @@ function esc(v: string): string {
 }
 
 /** Match each widget contact by email: directory first, then Outlook contacts. */
-export async function syncContacts(): Promise<{ summary: M365SyncSummary; status: M365Status }> {
+export const syncContacts = singleFlight(async () => {
+  try { return await performContactSync(); }
+  catch {
+    return {
+      summary: { matched: 0, photos: 0, updated: 0, unmatched: 0 },
+      status: setStatus({ lastError: "Microsoft contact sync could not finish. It will retry automatically, or you can use Sync now." }),
+    };
+  }
+});
+
+async function performContactSync(): Promise<{ summary: M365SyncSummary; status: M365Status }> {
   const summary: M365SyncSummary = { matched: 0, photos: 0, updated: 0, unmatched: 0 };
   const accessToken = await token();
   if (!accessToken) return { summary, status: setStatus({ lastError: status.lastError ?? "Not signed in." }) };
@@ -188,6 +200,7 @@ export async function syncContacts(): Promise<{ summary: M365SyncSummary; status
   const now = new Date().toISOString();
   await fs.mkdir(photosDir(), { recursive: true });
 
+  let lookupFailures = 0;
   let outlook: GraphContact[] | null = null;
   const loadOutlook = async () => {
     if (outlook) return outlook;
@@ -236,7 +249,8 @@ export async function syncContacts(): Promise<{ summary: M365SyncSummary; status
         }
       }
     } catch (err) {
-      console.warn("Graph lookup failed for", c.email, err);
+      lookupFailures++;
+      console.warn("Graph contact lookup failed", err);
     }
 
     if (!kind) {
@@ -271,7 +285,9 @@ export async function syncContacts(): Promise<{ summary: M365SyncSummary; status
 
   // Merge into the latest list: edits made while the sync ran are kept.
   await setContacts(applySyncChanges(getState().contacts, snapshot, contacts, ["title", "company", "m365", "photo", "updatedAt"]));
-  const next = setStatus({ lastSyncAt: now, lastError: undefined });
+  const next = lookupFailures
+    ? setStatus({ lastError: "Some Microsoft contacts could not be refreshed. Sync will retry automatically." })
+    : setStatus({ lastSyncAt: now, lastError: undefined });
   schedulePresence();
   void pollPresence();
   return { summary, status: next };
@@ -474,4 +490,19 @@ export function schedulePresence(): void {
   }
   void pollPresence();
   presenceTimer = setInterval(() => void pollPresence(), PRESENCE_INTERVAL_MS);
+}
+
+/** Convert this mailbox's Graph message ID for Classic Outlook's existing-item API. */
+export async function desktopMessageEntryId(messageId: string): Promise<{ entryId: string; addresses: string[] }> {
+  const accessToken = await token();
+  if (!accessToken) throw new Error("Sign in to Microsoft 365 again before opening this email.");
+  const translated = await graph<{ value: Array<{ sourceId?: string; targetId?: string }> }>(accessToken, "/me/translateExchangeIds", {
+    method: "POST",
+    body: JSON.stringify({ inputIds: [messageId], sourceIdType: "restId", targetIdType: "entryId" }),
+  });
+  const entryId = translated?.value.find(result => result.sourceId === messageId)?.targetId;
+  if (!entryId) throw new Error("This message may have moved. Check your inbox in the widget, then try again.");
+  const addresses = await myMailAddresses();
+  if (!addresses.length) throw new Error("Could not identify the Microsoft mailbox. Try signing in again.");
+  return { entryId, addresses };
 }

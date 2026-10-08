@@ -37,6 +37,7 @@ export const IPC = {
   logosRefresh: "logos:refresh",
   clientsGet: "clients:get",
   clientsScan: "clients:scan",
+  clientsOpenEmail: "clients:open-email",
   clientsMark: "clients:mark",
   clientsAddContact: "clients:add-contact",
   clientsRestoreHidden: "clients:restore-hidden",
@@ -105,6 +106,7 @@ export interface ContactsApi {
   refreshLogos(force?: boolean): Promise<number>;
   getClients(): Promise<ClientsState>;
   scanClients(): Promise<ClientsState>;
+  openClientEmail(email: string, messageId: string, action: "open" | "reply"): Promise<{ ok: true } | { ok: false; error: string }>;
   /** hide: off the list until they email again; notClient: never show; restore: undo either. */
   markClient(email: string, action: "hide" | "notClient" | "restore"): Promise<ClientsState>;
   addClientContact(email: string): Promise<Contact[]>;

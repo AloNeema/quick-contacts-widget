@@ -38,6 +38,7 @@ const api: ContactsApi = {
   refreshLogos: (force) => ipcRenderer.invoke(IPC.logosRefresh, force === true),
   getClients: () => ipcRenderer.invoke(IPC.clientsGet),
   scanClients: () => ipcRenderer.invoke(IPC.clientsScan),
+  openClientEmail: (email, messageId, action) => ipcRenderer.invoke(IPC.clientsOpenEmail, email, messageId, action),
   markClient: (email, action) => ipcRenderer.invoke(IPC.clientsMark, email, action),
   addClientContact: (email) => ipcRenderer.invoke(IPC.clientsAddContact, email),
   restoreHiddenClients: () => ipcRenderer.invoke(IPC.clientsRestoreHidden),
