@@ -1,3 +1,4 @@
+import { matchSalesforceLinks } from "@shared/salesforceLinks";
 /**
  * Salesforce link: OAuth 2.0 authorization-code flow with PKCE against the
  * user's own Connected App (public client, fixed loopback callback), tokens
@@ -13,7 +14,7 @@ import path from "node:path";
 import { SALESFORCE_REDIRECT_URI, SALESFORCE_SCOPES } from "@shared/defaults";
 import { applySyncChanges } from "@shared/merge";
 import { singleFlight } from "@shared/autoSync";
-import type { Contact, SalesforceDeal, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary } from "@shared/types";
+import type { Contact, SalesforceDeal, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, SalesforceRecordLink } from "@shared/types";
 import { getState, setContacts } from "./store";
 
 const API = "v60.0";
@@ -279,17 +280,18 @@ export function isSalesforceSignedIn(): boolean {
   return status.signedIn;
 }
 
-/** Which of these emails exist in Salesforce as a Contact or an open Lead (lower-cased). */
-export async function salesforceEmailMatches(emails: string[]): Promise<Set<string>> {
-  const found = new Set<string>();
-  if (!emails.length || !(await loadTokens())) return found;
-  const unique = [...new Set(emails.map((e) => e.toLowerCase()))];
+/** Match inbox clients to actual Contact/Lead records, including those not saved in the widget. */
+export async function salesforceClientLinks(emails: string[]): Promise<Record<string, SalesforceRecordLink>> {
+  if (!emails.length || !(await loadTokens())) return {};
+  const unique = [...new Set(emails.map((email) => email.trim().toLowerCase()))];
+  const contacts: Array<{ Id: string; Email?: string }> = [];
+  const leads: Array<{ Id: string; Email?: string }> = [];
   for (let i = 0; i < unique.length; i += 100) {
     const chunk = unique.slice(i, i + 100).map(soqlStr).join(",");
-    for (const r of await soql<{ Email?: string }>(`SELECT Email FROM Contact WHERE Email IN (${chunk})`)) if (r.Email) found.add(r.Email.toLowerCase());
-    for (const r of await soql<{ Email?: string }>(`SELECT Email FROM Lead WHERE IsConverted = false AND Email IN (${chunk})`)) if (r.Email) found.add(r.Email.toLowerCase());
+    contacts.push(...await soql<{ Id: string; Email?: string }>(`SELECT Id, Email FROM Contact WHERE Email IN (${chunk})`));
+    leads.push(...await soql<{ Id: string; Email?: string }>(`SELECT Id, Email FROM Lead WHERE IsConverted = false AND Email IN (${chunk})`));
   }
-  return found;
+  return matchSalesforceLinks(tokens?.instanceUrl, contacts, leads);
 }
 
 /** Live open deals for one linked contact (cached 5 min); also refreshes the row snapshot. */

@@ -100,7 +100,8 @@ export function buildCandidates(
       c.lastSubject = m.subject || "(no subject)";
       c.lastPreview = m.preview;
       c.lastDirection = m.direction;
-      c.webLink = m.webLink ?? c.webLink;
+      // Keep the link paired with the displayed message, never an older email.
+      c.webLink = m.webLink;
       out.set(email, c);
     }
   }

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Briefcase, Inbox, Loader2, Mail, MoreHorizontal, Paperclip, Phone, RefreshCw, Reply, Search, UserCheck, UserPlus, UserX, X } from "lucide-react";
+import { Briefcase, ExternalLink, Inbox, Loader2, Mail, MoreHorizontal, Paperclip, Phone, RefreshCw, Reply, Search, UserCheck, UserPlus, UserX, X } from "lucide-react";
 import type { ClientItem, ClientReason, Contact } from "@shared/types";
 import { createContact, relativeTime } from "@shared/merge";
 import { preferredPhone } from "@shared/phone";
+import { salesforceRecordUrl } from "@shared/salesforceLinks";
 import { cn } from "@renderer/lib/utils";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { Avatar } from "./Avatar";
@@ -32,6 +33,7 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   const m365 = useContactsStore((s) => s.m365);
   const cfg = useContactsStore((s) => s.settings.clients);
   const talkdesk = useContactsStore((s) => s.settings.dialer.id === "talkdesk");
+  const sfInstance = useContactsStore((s) => s.sf.instanceUrl);
   const showToast = useContactsStore((s) => s.showToast);
   const [menu, setMenu] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -91,11 +93,17 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   const renderRow = (i: ClientItem) => {
     const contact = i.contactId ? byId.get(i.contactId) : undefined;
     const call = contact && preferredPhone(contact, "call");
+    const salesforceUrl = salesforceRecordUrl(sfInstance, contact?.sf?.id) ?? i.salesforceRecord?.url;
     const avatarContact: Contact = contact ?? { ...createContact({ name: i.name, email: i.email }, 0), id: `cl-${i.email}` };
     const [top, ...rest] = i.reasons;
     const why = i.reasons.map((r) => REASON[r].label).join(", ");
     return (
-      <li key={i.email} className={cn("contact-row group relative rounded-2xl px-2.5", compact ? "py-1.5" : "py-2", i.isNew && "client-new")}>
+      <li key={i.email} onKeyDown={(e) => {
+        if (e.key === "Escape" && menu === i.email) {
+          setMenu(null);
+          e.currentTarget.querySelector<HTMLButtonElement>("[data-client-options]")?.focus();
+        }
+      }} className={cn("contact-row group relative rounded-2xl px-2.5", compact ? "py-1.5" : "py-2", i.isNew && "client-new")}>
         <div className="flex items-start gap-3">
           <Avatar contact={avatarContact} photosBaseUrl={photosBaseUrl} size={compact ? 32 : 36} />
           <div className="min-w-0 flex-1">
@@ -106,7 +114,15 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
                 {relativeTime(i.lastInboundAt ?? i.lastActivityAt).replace(" ago", "")}
               </span>
             </div>
-            <p className="truncate text-xs leading-snug text-foreground/80">{i.lastSubject}</p>
+            {i.webLink ? (
+              <button type="button" onClick={() => void run(window.contacts.openLink(i.webLink!))}
+                title="Open this email in Outlook"
+                aria-label={`Open email: ${i.lastSubject}`}
+                className="no-drag block w-full truncate text-left text-xs leading-snug text-foreground/90 hover:underline focus-visible:underline">
+                {i.lastSubject}
+              </button>
+            ) : <p className="truncate text-xs leading-snug text-foreground/90">{i.lastSubject}</p>}
+            {i.lastPreview ? <p className="mt-1 line-clamp-2 break-words text-xs leading-relaxed text-muted-foreground">{i.lastPreview}</p> : null}
             {/* One line of status: the action signal first, then the strongest reason; the rest in the tooltip. */}
             <div className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap" title={`Why this is a client: ${why}`} aria-label={`${i.waitingOnYou ? "Waiting on you. " : ""}Why this is a client: ${why}`}>
               {i.waitingOnYou ? <span className="waiting-chip shrink-0 rounded-full px-1.5 text-[11px] font-medium leading-[18px]">Waiting on you</span> : null}
@@ -135,10 +151,16 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className={cn("mt-1.5 flex items-center gap-1.5", compact ? "pl-[44px]" : "pl-[48px]")}>
+        <div className={cn("mt-1.5 flex flex-wrap items-center gap-1.5", compact ? "pl-[44px]" : "pl-[48px]")}>
           <button type="button" className="fu-btn fu-btn-primary" onClick={() => void (i.webLink ? run(window.contacts.openLink(i.webLink)) : run(window.contacts.email(i.email, contact?.id)))}>
             <Reply className="h-3 w-3" /> Reply
           </button>
+          {salesforceUrl ? (
+            <button type="button" className="fu-btn" title="Open Salesforce contact or lead"
+              onClick={() => void run(window.contacts.openLink(salesforceUrl))}>
+              <ExternalLink className="h-3 w-3" /> Salesforce
+            </button>
+          ) : null}
           {call && contact ? (
             <button type="button" className="fu-btn" onClick={() => void run(window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }))}>
               <Phone className="h-3 w-3" /> {talkdesk ? "Copy for call" : "Call"}
@@ -154,22 +176,22 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
             </button>
           )}
           <div className="relative ml-auto">
-            <button type="button" aria-label={`More options for ${i.name}`} className="fu-btn !px-1.5" onClick={() => setMenu(menu === i.email ? null : i.email)}>
+            <button type="button" aria-label={`More options for ${i.name}`} aria-expanded={menu === i.email} data-client-options className="fu-btn !px-1.5" onClick={() => setMenu(menu === i.email ? null : i.email)}>
               <MoreHorizontal className="h-3.5 w-3.5" />
             </button>
-            {menu === i.email ? (
-              <div className="menu-glass absolute right-0 top-7 z-30 w-52 rounded-xl p-1 animate-fade-up">
-                <button type="button" className="menu-item" onClick={() => void mark(i, "hide")}>
-                  <X className="h-3.5 w-3.5" /> Remove for now
-                </button>
-                <button type="button" className="menu-item text-red-300" onClick={() => void mark(i, "notClient")}>
-                  <UserX className="h-3.5 w-3.5" /> Not a client, never show
-                </button>
-                <p className="px-2.5 pb-1 pt-0.5 text-[11px] leading-snug text-muted-foreground">{i.email}</p>
-              </div>
-            ) : null}
           </div>
         </div>
+        {menu === i.email ? (
+          <div role="group" aria-label={`Options for ${i.name}`} className="no-drag mt-2 rounded-xl border bg-popover p-1 text-popover-foreground">
+            <button type="button" className="menu-item" onClick={() => void mark(i, "hide")}>
+              <X className="h-3.5 w-3.5" /> Remove for now
+            </button>
+            <button type="button" className="menu-item text-destructive" onClick={() => void mark(i, "notClient")}>
+              <UserX className="h-3.5 w-3.5" /> Not a client, never show
+            </button>
+            <p className="break-all px-2.5 pb-1 pt-0.5 text-[11px] leading-snug text-muted-foreground">{i.email}</p>
+          </div>
+        ) : null}
       </li>
     );
   };

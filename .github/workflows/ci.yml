@@ -58,6 +58,8 @@ jobs:
         run: npm run dist:win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Check dark and light appearance in Chromium
+        run: npm run test:appearance
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:

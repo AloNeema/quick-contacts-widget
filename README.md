@@ -113,3 +113,9 @@ This is a standalone desktop app. It does not depend on the QCF Offer Tool web a
 ## Automatic contact syncing (0.1.4-beta.6)
 
 Connected Microsoft 365 and Salesforce accounts sync shortly after launch or sign-in, every 30 minutes while the app is running (including in the tray), and shortly after the computer resumes from sleep. Sync now remains available; concurrent manual and automatic requests share the same in-flight operation. A temporary failure is retried on the next scheduled refresh. The Clients inbox scan keeps its separate 15-minute schedule. Quit stops syncing; an expired or revoked login can still require signing in again. No new app IDs, permissions or backup format changes are required.
+
+## Readable Clients and record shortcuts (0.1.4-beta.7)
+
+Dark and acrylic panel backgrounds now use valid color values with a minimum 86% opacity; new setups default to 90%. Solid menus and inline client options prevent text from other rows showing through. The opacity slider reports the effective value for older low-opacity settings.
+
+Clients show a two-line preview of the latest email. Click its subject to open that same message in Outlook. Salesforce buttons open matched Contacts or Leads, including inbox clients not yet saved to the widget. Inbox-only record shortcuts appear after the next inbox scan. Existing contact detail cards also offer the Salesforce shortcut before deal loading finishes.

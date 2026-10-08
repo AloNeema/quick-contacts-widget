@@ -128,3 +128,21 @@ describe("v0.1.2 bug fixes", () => {
     expect(seen).toEqual({ "a@x.com": "", "b@y.com": "2026-10-02T00:00:00Z" });
   });
 });
+
+describe("email message shortcuts", () => {
+  it("keeps the latest subject, preview and link together", () => {
+    const [client] = buildCandidates([
+      m({ direction: "in", at: "2026-10-01T01:00:00Z", from: { address: "client@shop.com" }, subject: "Old", preview: "Old body", webLink: "https://outlook.office.com/old" }),
+      m({ direction: "in", at: "2026-10-02T01:00:00Z", from: { address: "client@shop.com" }, subject: "New", preview: "New body", webLink: "https://outlook.office.com/new" }),
+    ], opts);
+    expect(client).toMatchObject({ lastSubject: "New", lastPreview: "New body", webLink: "https://outlook.office.com/new" });
+  });
+  it("never opens an older email under a newer subject when the new link is missing", () => {
+    const [client] = buildCandidates([
+      m({ direction: "in", at: "2026-10-01T01:00:00Z", from: { address: "client@shop.com" }, webLink: "https://outlook.office.com/old" }),
+      m({ direction: "in", at: "2026-10-02T01:00:00Z", from: { address: "client@shop.com" }, subject: "New", preview: "New body" }),
+    ], opts);
+    expect(client.lastSubject).toBe("New");
+    expect(client.webLink).toBeUndefined();
+  });
+});
