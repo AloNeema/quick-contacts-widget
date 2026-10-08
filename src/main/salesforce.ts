@@ -12,6 +12,7 @@ import http from "node:http";
 import path from "node:path";
 import { SALESFORCE_REDIRECT_URI, SALESFORCE_SCOPES } from "@shared/defaults";
 import { applySyncChanges } from "@shared/merge";
+import { singleFlight } from "@shared/autoSync";
 import type { Contact, SalesforceDeal, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary } from "@shared/types";
 import { getState, setContacts } from "./store";
 
@@ -105,6 +106,7 @@ async function tokenRequest(loginUrl: string, params: Record<string, string>): P
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(params).toString(),
+    signal: AbortSignal.timeout(30_000),
   });
   const body = (await res.json()) as { access_token?: string; refresh_token?: string; instance_url?: string; id?: string; error_description?: string; error?: string };
   if (!res.ok || !body.access_token || !body.instance_url) throw new Error(body.error_description ?? body.error ?? `Token request failed (${res.status})`);
@@ -184,7 +186,7 @@ async function refreshAccessToken(): Promise<Tokens | null> {
 async function soql<T>(query: string, retried = false): Promise<T[]> {
   const t = await loadTokens();
   if (!t) throw new Error("Not signed in to Salesforce");
-  const res = await fetch(`${t.instanceUrl}/services/data/${API}/query?q=${encodeURIComponent(query)}`, { headers: { Authorization: `Bearer ${t.accessToken}` } });
+  const res = await fetch(`${t.instanceUrl}/services/data/${API}/query?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(30_000), headers: { Authorization: `Bearer ${t.accessToken}` } });
   if (res.status === 401 && !retried) {
     const nt = await refreshAccessToken();
     if (nt) return soql<T>(query, true);
@@ -216,7 +218,9 @@ const topDealOf = (opps: SfOpp[]): TopDeal =>
   opps[0] ? { id: opps[0].Id, name: opps[0].Name, stage: opps[0].StageName, amount: opps[0].Amount ?? undefined, closeDate: opps[0].CloseDate ?? undefined } : undefined;
 
 /** Link every contact with an email to a Salesforce Contact (or Lead) and snapshot its top open deal. */
-export async function sfSync(): Promise<{ summary: SalesforceSyncSummary; status: SalesforceStatus }> {
+export const sfSync = singleFlight(performSalesforceSync);
+
+async function performSalesforceSync(): Promise<{ summary: SalesforceSyncSummary; status: SalesforceStatus }> {
   const summary: SalesforceSyncSummary = { linked: 0, unmatched: 0 };
   if (!(await loadTokens())) return { summary, status: set({ lastError: "Not signed in to Salesforce" }) };
   const snapshot = getState().contacts;

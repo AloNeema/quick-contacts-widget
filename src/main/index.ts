@@ -19,6 +19,7 @@ import { broadcast } from "./windows";
 import { IPC } from "@shared/ipc";
 import { applyPendingRestore, automaticBackup } from "./backup";
 import { setBackupError } from "./backupActions";
+import { startAutoSync, stopAutoSync } from "./autoSync";
 
 // Preview builds have their own contacts/settings so testing a new provider cannot
 // make a stable build discard settings it does not yet understand.
@@ -76,6 +77,8 @@ if (!gotLock) {
       onPresence: (p) => broadcast(IPC.presenceChanged, p),
     });
 
+    startAutoSync();
+
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWidgetWindow();
     });
@@ -87,6 +90,7 @@ if (!gotLock) {
   // Tray app: closing windows must not quit.
   app.on("window-all-closed", () => undefined);
   app.on("before-quit", () => {
+    stopAutoSync();
     (global as { __quitting?: boolean }).__quitting = true;
   });
   app.on("will-quit", () => { releaseHotkey(); });

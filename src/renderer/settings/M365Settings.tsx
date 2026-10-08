@@ -92,8 +92,9 @@ export function M365Settings() {
           <div>
             <p className="text-sm font-medium">{status.signedIn ? `Signed in as ${status.account?.name ?? status.account?.username}` : "Not signed in"}</p>
             <p className="text-xs text-muted-foreground">
-              {status.lastSyncAt ? `Last sync ${new Date(status.lastSyncAt).toLocaleString()} · ${synced} contacts linked` : synced ? `${synced} contacts linked` : "Sign in, then sync to pull photos and titles for everyone with a work email."}
+              {status.lastSyncAt ? `Last sync ${new Date(status.lastSyncAt).toLocaleString()} · ${synced} contacts linked` : synced ? `${synced} contacts linked` : "Sign in to automatically pull photos and titles for contacts with a work email."}
             </p>
+            <p className="mt-1 text-xs text-muted-foreground">Automatically syncs after sign-in, when the app opens, every 30 minutes while running, and after your computer wakes. Sync now is always available.</p>
             {status.lastError ? <p className="mt-1 text-xs text-destructive">{status.lastError}</p> : null}
           </div>
           <div className="flex gap-2">

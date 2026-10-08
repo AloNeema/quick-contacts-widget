@@ -109,3 +109,7 @@ Layout: `src/main` (Electron main: windows, tray, JSON store, photos, spreadshee
 Security posture: context isolation on, node integration off, a CSP in `index.html`, every IPC payload validated with zod in the main process, and `shell.openExternal` limited to `tel:`, `sms:`, `mailto:`, `rcapp:`, `msteams:`, `callto:`, `sip:`, `https://linkedin.com` and the scheme of a custom template.
 
 This is a standalone desktop app. It does not depend on the QCF Offer Tool web app; it talks to Microsoft 365, Salesforce and your dialer directly.
+
+## Automatic contact syncing (0.1.4-beta.6)
+
+Connected Microsoft 365 and Salesforce accounts sync shortly after launch or sign-in, every 30 minutes while the app is running (including in the tray), and shortly after the computer resumes from sleep. Sync now remains available; concurrent manual and automatic requests share the same in-flight operation. A temporary failure is retried on the next scheduled refresh. The Clients inbox scan keeps its separate 15-minute schedule. Quit stops syncing; an expired or revoked login can still require signing in again. No new app IDs, permissions or backup format changes are required.
