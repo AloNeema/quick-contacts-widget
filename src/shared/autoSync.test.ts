@@ -51,6 +51,23 @@ describe("automatic contact sync", () => {
     scheduler.stop();
   });
 
+  it("runs once more when a sign-in request lands during a run", async () => {
+    let finish!: () => void;
+    const work = vi.fn(() => new Promise<void>(resolve => { finish = resolve; }));
+    const scheduler = createAutoSyncScheduler([work], vi.fn());
+    scheduler.start();
+    await vi.advanceTimersByTimeAsync(AUTO_SYNC_DELAY_MS);
+    expect(work).toHaveBeenCalledTimes(1);
+    scheduler.request();
+    await vi.advanceTimersByTimeAsync(AUTO_SYNC_DELAY_MS);
+    expect(work).toHaveBeenCalledTimes(1);
+    finish();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(work).toHaveBeenCalledTimes(2);
+    finish();
+    scheduler.stop();
+  });
+
   it("continues with Salesforce after a Microsoft failure and retries next time", async () => {
     const failed = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(undefined);
     const other = vi.fn(async () => {});

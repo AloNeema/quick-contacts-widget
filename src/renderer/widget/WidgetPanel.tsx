@@ -9,7 +9,7 @@ import { useContactsStore } from "@renderer/store/useContacts";
 import { ContactRow } from "./ContactRow";
 import { RecentsStrip } from "./RecentsStrip";
 import { DockStrip } from "./DockStrip";
-import { ResizeGrip } from "./ResizeGrip";
+import { ResizeEdge, ResizeGrip } from "./ResizeGrip";
 import { useContactReorder } from "@renderer/hooks/useContactReorder";
 import { preferredPhone } from "@shared/phone";
 
@@ -137,7 +137,7 @@ export function WidgetPanel() {
               role="tab"
               aria-selected={tab === "contacts"}
               onClick={() => setTab("contacts")}
-              className={cn("no-drag title-display flex h-7 items-center gap-1.5 rounded-lg px-1.5 text-[14px] transition-colors", tab === "contacts" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
+              className={cn("no-drag title-display flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-1.5 text-[14px] transition-colors", tab === "contacts" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
             >
               Contacts {narrow ? null : <span className="text-[11px] tabular-nums text-muted-foreground">{contacts.length}</span>}
             </button>
@@ -147,7 +147,7 @@ export function WidgetPanel() {
               aria-selected={tab === "clients"}
               aria-label={clients.newCount ? `Clients, ${clients.newCount} new since you last looked` : "Clients"}
               onClick={() => setTab("clients")}
-              className={cn("no-drag title-display flex h-7 items-center gap-1.5 rounded-lg px-1.5 text-[14px] transition-colors", tab === "clients" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
+              className={cn("no-drag title-display flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-1.5 text-[14px] transition-colors", tab === "clients" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
             >
               Clients
               {clients.newCount > 0 ? (
@@ -291,7 +291,9 @@ export function WidgetPanel() {
           </div>
         ) : null}
 
-        <ResizeGrip />
+        {/* Resize from the inner edge: docked to the right, the panel grows leftwards. */}
+        <ResizeEdge side={dock.enabled && dock.side === "right" ? "left" : "right"} />
+        <ResizeGrip side={dock.enabled && dock.side === "right" ? "left" : "right"} />
       </div>
     </div>
   );

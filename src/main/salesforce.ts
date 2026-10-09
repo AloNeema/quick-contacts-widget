@@ -268,7 +268,7 @@ async function performSalesforceSync(): Promise<{ summary: SalesforceSyncSummary
       summary.unmatched++;
     }
     // Merge into the latest list: edits made while the sync ran are kept.
-    await setContacts(applySyncChanges(getState().contacts, snapshot, contacts, ["sf"]));
+    await setContacts(applySyncChanges(getState().contacts, snapshot, contacts, ["sf", "company"]));
     dealsCache.clear();
     return { summary, status: set({ lastSyncAt: now, lastError: undefined }) };
   } catch (err) {

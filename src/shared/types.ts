@@ -180,6 +180,8 @@ export interface DockSettings {
   /** Strip position/height on the docked display; unset = centred, 70% of the work area. */
   y?: number;
   height?: number;
+  /** Width of the expanded panel while docked; unset = the floating width. */
+  width?: number;
 }
 
 export type ContactSort = "manual" | "name" | "recent" | "frequent";
@@ -239,6 +241,23 @@ export interface SalesforceRecordLink {
   kind: "contact" | "lead";
   id: string;
   url: string;
+}
+
+/** One client email, read on demand for the in-widget preview. Plain text only. */
+export interface ClientEmailPreview {
+  messageId: string;
+  subject: string;
+  at: string;
+  direction: "in" | "out";
+  from?: { name?: string; address: string };
+  to: { name?: string; address: string }[];
+  cc: { name?: string; address: string }[];
+  /** The newest message text, with the quoted thread split off into `quoted`. */
+  body: string;
+  quoted?: string;
+  truncated: boolean;
+  attachments: { name: string; size: number }[];
+  webLink?: string;
 }
 
 export interface ClientItem extends ClientCandidate {

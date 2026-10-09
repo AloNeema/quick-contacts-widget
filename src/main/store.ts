@@ -86,7 +86,7 @@ export const settingsSchema = z.object({
     .object({ consumerKey: z.string().max(300), loginUrl: z.string().url().max(300), showDeals: z.boolean() })
     .default(DEFAULT_SETTINGS.salesforce),
   dock: z
-    .object({ enabled: z.boolean(), side: z.enum(["left", "right"]), y: z.number().optional(), height: z.number().optional() })
+    .object({ enabled: z.boolean(), side: z.enum(["left", "right"]), y: z.number().optional(), height: z.number().optional(), width: z.number().optional() })
     .default(DEFAULT_SETTINGS.dock),
   m365: z
     .object({

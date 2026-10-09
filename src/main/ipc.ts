@@ -25,7 +25,7 @@ import { applyHotkey } from "./hotkey";
 import { getContactContext, getPresence, refreshStatus, schedulePresence, signIn, signOut, syncContacts } from "./m365";
 import { checkForUpdates, getUpdateStatus, installUpdate, rescheduleUpdates, setUpdateToken } from "./updater";
 import { refreshLogos } from "./logos";
-import { addClientContact, openClientEmail, contactsChangedForClients, getClientsState, markClient, markClientsViewed, rescheduleClients, restoreHiddenClients, scanClients } from "./clients";
+import { addClientContact, openClientEmail, previewClientEmail, contactsChangedForClients, getClientsState, markClient, markClientsViewed, rescheduleClients, restoreHiddenClients, scanClients } from "./clients";
 import { sfDeals, sfRefreshStatus, sfSignIn, sfSignOut, sfSync } from "./salesforce";
 
 const incomingSchema = z.object({
@@ -111,9 +111,15 @@ export function registerIpc(): void {
   });
 
   ipcMain.handle(IPC.contactsUpsert, async (_e, raw: unknown) => {
-    const contact = contactSchema.parse(raw) as Contact;
+    const parsed = contactSchema.parse(raw) as Contact;
     const list = getState().contacts;
-    const idx = list.findIndex((c) => c.id === contact.id);
+    const idx = list.findIndex((c) => c.id === parsed.id);
+    // The edit form saves the copy it opened with. Fields it never edits (sync links, logo, photo,
+    // pin/order, usage) come from the stored contact so a sync or call made meanwhile isn't undone.
+    const stored = idx === -1 ? undefined : list[idx];
+    const contact: Contact = stored
+      ? { ...parsed, m365: stored.m365, sf: stored.sf, logo: stored.logo, photo: stored.photo, pinned: stored.pinned, order: stored.order, lastContactedAt: stored.lastContactedAt, contactCount: stored.contactCount }
+      : parsed;
     const next = idx === -1 ? [...list, contact] : list.map((c) => (c.id === contact.id ? contact : c));
     const saved = await setContacts(next);
     notify();
@@ -133,6 +139,9 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.settingsSet, async (_e, raw: unknown) => {
     const patch = settingsPatchSchema.parse(raw) as Partial<Settings>;
     const prev = getState().settings;
+    // Dock geometry is owned by the main process (saved as the window moves); the renderer only
+    // toggles enabled/side, and its copy of y/height/width may be stale.
+    if (patch.dock) patch.dock = { ...patch.dock, y: prev.dock.y, height: prev.dock.height, width: prev.dock.width };
     const next = await patchSettings(patch);
     if (patch.alwaysOnTop !== undefined) getWidgetWindow()?.setAlwaysOnTop(next.alwaysOnTop, "normal");
     if (patch.launchAtLogin !== undefined) applyLaunchAtLogin(next.launchAtLogin);
@@ -249,6 +258,9 @@ export function registerIpc(): void {
   });
   ipcMain.handle(IPC.clientsGet, () => getClientsState());
   ipcMain.handle(IPC.clientsScan, () => scanClients());
+  ipcMain.handle(IPC.clientsPreviewEmail, (_e, email: unknown, messageId: unknown) =>
+    previewClientEmail(z.string().email().parse(email), z.string().min(1).max(8192).parse(messageId)),
+  );
   ipcMain.handle(IPC.clientsOpenEmail, (_e, email: unknown, messageId: unknown, action: unknown) =>
     openClientEmail(z.string().email().parse(email), z.string().min(1).max(8192).parse(messageId), z.enum(["open", "reply"]).parse(action)),
   );

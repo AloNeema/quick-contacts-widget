@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Briefcase, ExternalLink, Inbox, Loader2, Mail, MoreHorizontal, Paperclip, Phone, RefreshCw, Reply, Search, UserCheck, UserPlus, UserX, X } from "lucide-react";
 import type { ClientItem, ClientReason, Contact } from "@shared/types";
 import { createContact, relativeTime } from "@shared/merge";
@@ -7,6 +7,7 @@ import { salesforceRecordUrl } from "@shared/salesforceLinks";
 import { cn } from "@renderer/lib/utils";
 import { useContactsStore } from "@renderer/store/useContacts";
 import { Avatar } from "./Avatar";
+import { EmailPreview } from "./EmailPreview";
 
 export type ClientFilter = "all" | "waiting" | "new";
 
@@ -37,6 +38,8 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   const showToast = useContactsStore((s) => s.showToast);
   const platform = useContactsStore((s) => s.platform);
   const [opening, setOpening] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const byId = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts]);
@@ -64,27 +67,41 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
     if (!r.ok) showToast(r.error, "error");
     else if (r.message) showToast(r.message);
   };
+  // Windows: Classic Outlook first. If it isn't installed (New Outlook, web only) or the message isn't
+  // linked yet, fall back to Outlook on the web, then to a new email.
   const openEmail = async (item: ClientItem, action: "open" | "reply") => {
     if (opening) return;
     setOpening(item.email);
     try {
-      if (platform === "win32") {
-        if (!item.lastMessageId) {
-          showToast("Check your inbox once to enable desktop Outlook links.", "error");
-          return;
-        }
-        await run(window.contacts.openClientEmail(item.email, item.lastMessageId, action));
-      } else if (item.webLink) {
-        await run(window.contacts.openLink(item.webLink));
-      } else {
-        showToast("This email link is unavailable. Check your inbox and try again.", "error");
+      let desktopError: string | undefined;
+      if (platform === "win32" && item.lastMessageId) {
+        const r = await window.contacts.openClientEmail(item.email, item.lastMessageId, action);
+        if (r.ok) return;
+        desktopError = r.error;
       }
+      const fallback = item.webLink ? await window.contacts.openLink(item.webLink) : await window.contacts.email(item.email, item.contactId);
+      if (!fallback.ok) showToast(desktopError ?? fallback.error, "error");
+      else if (desktopError) showToast(item.webLink ? "Classic Outlook didn't open, so the email opened in Outlook on the web." : "Classic Outlook didn't open, so a new email was started instead.");
     } catch {
-      showToast("Could not open the email. Try again, or use Open email in browser in the three-dot menu.", "error");
+      showToast("Could not open the email. Try again, or use Open email in browser in the ⋯ menu.", "error");
     } finally {
       setOpening(null);
     }
   };
+  // The item can drop off the list (rescan, removed); the pane closes with it.
+  const previewItem = previewing ? state.items.find((i) => i.email === previewing) : undefined;
+  const closePreview = () => {
+    const email = previewing;
+    setPreviewing(null);
+    // Return focus to the email the pane was opened from.
+    requestAnimationFrame(() => rootRef.current?.querySelector<HTMLElement>(`[data-preview-trigger="${CSS.escape(email ?? "")}"]`)?.focus());
+  };
+  // While the reading pane is open, the list behind it is inert (no tabbing or clicks into hidden rows).
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    for (const el of Array.from(root.children)) if (!el.classList.contains("email-preview")) el.toggleAttribute("inert", Boolean(previewItem));
+  });
   const mark = async (i: ClientItem, action: "hide" | "notClient") => {
     setMenu(null);
     useContactsStore.setState({ clients: await window.contacts.markClient(i.email, action) });
@@ -137,15 +154,18 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
                 {relativeTime(i.lastInboundAt ?? i.lastActivityAt).replace(" ago", "")}
               </span>
             </div>
-            {i.webLink || i.lastMessageId ? (
-              <button type="button" disabled={opening !== null} onClick={() => void openEmail(i, "open")}
-                title={platform === "win32" ? "Open this email in Classic Outlook" : "Open this email in Outlook"}
-                aria-label={`Open email: ${i.lastSubject}`}
-                className="no-drag block w-full truncate text-left text-xs leading-snug text-foreground/90 hover:underline focus-visible:underline">
-                {i.lastSubject}
-              </button>
-            ) : <p className="truncate text-xs leading-snug text-foreground/90">{i.lastSubject}</p>}
-            {i.lastPreview ? <p className="mt-1 line-clamp-2 break-words text-xs leading-relaxed text-muted-foreground">{i.lastPreview}</p> : null}
+            {/* Subject and preview open the reading pane; Outlook is one click away from there or the ⋯ menu. */}
+            <button
+              type="button"
+              data-preview-trigger={i.email}
+              onClick={() => setPreviewing(i.email)}
+              title="Read this email"
+              aria-label={`Read email: ${i.lastSubject || "(no subject)"}`}
+              className="no-drag group/mail -mx-1 block w-[calc(100%+0.5rem)] rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-foreground/[0.06] focus-visible:bg-foreground/[0.06] focus-visible:outline-none"
+            >
+              <span className="block truncate text-xs leading-snug text-foreground/90 group-hover/mail:underline">{i.lastSubject || "(no subject)"}</span>
+              {i.lastPreview ? <span className="mt-0.5 line-clamp-2 break-words text-xs leading-relaxed text-muted-foreground">{i.lastPreview}</span> : null}
+            </button>
             {/* One line of status: the action signal first, then the strongest reason; the rest in the tooltip. */}
             <div className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap" title={`Why this is a client: ${why}`} aria-label={`${i.waitingOnYou ? "Waiting on you. " : ""}Why this is a client: ${why}`}>
               {i.waitingOnYou ? <span className="waiting-chip shrink-0 rounded-full px-1.5 text-[11px] font-medium leading-[18px]">Waiting on you</span> : null}
@@ -206,7 +226,12 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
         </div>
         {menu === i.email ? (
           <div role="group" aria-label={`Options for ${i.name}`} className="no-drag mt-2 rounded-xl border bg-popover p-1 text-popover-foreground">
-            {i.webLink ? (
+            {i.lastMessageId || i.webLink ? (
+              <button type="button" className="menu-item" onClick={() => { setMenu(null); void openEmail(i, "open"); }}>
+                <ExternalLink className="h-3.5 w-3.5" /> {platform === "win32" ? "Open in Outlook" : "Open email"}
+              </button>
+            ) : null}
+            {i.webLink && platform === "win32" ? (
               <button type="button" className="menu-item" onClick={() => { setMenu(null); void run(window.contacts.openLink(i.webLink!)); }}>
                 <ExternalLink className="h-3.5 w-3.5" /> Open email in browser
               </button>
@@ -225,7 +250,7 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   };
 
   return (
-    <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+    <div ref={rootRef} className="relative z-10 flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-1.5 px-3 pb-2">
         <div className="no-drag glass-inset relative min-w-0 flex-1 rounded-xl">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -275,14 +300,14 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
             : "Not checked yet"}
       </p>
       {!m365.signedIn ? (
-        <div role="alert" className="mx-3 mb-2 flex items-start gap-2 rounded-lg bg-red-500/15 px-2.5 py-1.5 text-[12px] text-red-100">
+        <div role="alert" className="mx-3 mb-2 flex items-start gap-2 rounded-lg alert-error px-2.5 py-1.5 text-[12px]">
           <span className="min-w-0 flex-1">Microsoft 365 needs you to sign in again. The list below is from the last successful check.</span>
           <button type="button" className="shrink-0 font-medium underline underline-offset-2" onClick={() => void window.contacts.openSettings("m365")}>
             Sign in
           </button>
         </div>
       ) : state.error ? (
-        <div role="alert" className="mx-3 mb-2 flex items-start gap-2 rounded-lg bg-red-500/15 px-2.5 py-1.5 text-[12px] text-red-100" title={state.error}>
+        <div role="alert" className="mx-3 mb-2 flex items-start gap-2 rounded-lg alert-error px-2.5 py-1.5 text-[12px]" title={state.error}>
           <span className="min-w-0 flex-1">{friendlyError(state.error)}</span>
           <button
             type="button"
@@ -311,6 +336,17 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
           </ul>
         )}
       </div>
+      {previewItem ? (
+        <EmailPreview
+          key={previewItem.email}
+          item={previewItem}
+          busy={opening !== null}
+          openLabel={platform === "win32" ? "Open in Outlook" : "Open in browser"}
+          onReply={() => void openEmail(previewItem, "reply")}
+          onOpen={() => void openEmail(previewItem, "open")}
+          onClose={closePreview}
+        />
+      ) : null}
     </div>
   );
 }
