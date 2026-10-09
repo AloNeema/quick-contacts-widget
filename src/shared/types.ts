@@ -3,7 +3,7 @@
 export type DialAction = "call" | "sms";
 export type PhoneLabel = "office" | "cell";
 
-export type DialerProviderId = "ringcentral" | "phonelink" | "system" | "custom" | "talkdesk";
+export type DialerProviderId = "ringcentral" | "phonelink" | "system" | "custom" | "talkdesk" | "talkdeskApp";
 
 export interface DialerProvider {
   id: DialerProviderId;

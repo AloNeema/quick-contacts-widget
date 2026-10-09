@@ -7,6 +7,14 @@ export const DIALER_PRESETS: Record<Exclude<DialerProvider["id"], "custom">, Dia
     callTemplate: "",
     smsTemplate: "",
   },
+  // Talkdesk Workspace set as the computer's default calling app: Call opens it through tel:.
+  // Talkdesk has no link for starting a text, so Text copies the number to paste into Conversations.
+  talkdeskApp: {
+    id: "talkdeskApp",
+    label: "Talkdesk app (call opens Talkdesk, text copies number)",
+    callTemplate: "tel:{e164}",
+    smsTemplate: "",
+  },
   ringcentral: {
     id: "ringcentral",
     label: "RingCentral app",

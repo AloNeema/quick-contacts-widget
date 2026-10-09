@@ -36,6 +36,20 @@ describe("Talkdesk action routing", () => {
     expect(deps.openExternal).not.toHaveBeenCalled();
     expect(deps.recordUse).not.toHaveBeenCalled();
   });
+  it("Talkdesk app mode opens calls through tel: and records the contact", async () => {
+    const deps = services();
+    expect(await dispatchDial(DIALER_PRESETS.talkdeskApp, { ...request, action: "call" }, deps)).toEqual({ ok: true });
+    expect(deps.openExternal).toHaveBeenCalledWith("tel:%2B12025550123");
+    expect(deps.copy).not.toHaveBeenCalled();
+    expect(deps.recordUse).toHaveBeenCalledWith(request.contactId);
+  });
+  it("Talkdesk app mode copies texting numbers instead of opening an sms: link", async () => {
+    const deps = services();
+    expect(await dispatchDial(DIALER_PRESETS.talkdeskApp, { ...request, action: "sms" }, deps)).toMatchObject({ ok: true, message: expect.stringContaining("Talkdesk SMS") });
+    expect(deps.copy).toHaveBeenCalledWith(request.phone);
+    expect(deps.openExternal).not.toHaveBeenCalled();
+    expect(deps.recordUse).not.toHaveBeenCalled();
+  });
   it("preserves RingCentral routing and its existing history behavior", async () => {
     const deps = services();
     expect(await dispatchDial(DIALER_PRESETS.ringcentral, { ...request, action: "call" }, deps)).toEqual({ ok: true });

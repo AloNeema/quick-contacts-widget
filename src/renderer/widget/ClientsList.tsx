@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { callCopiesNumber } from "@shared/dialer";
 import { Briefcase, ExternalLink, Inbox, Loader2, Mail, MoreHorizontal, Paperclip, Phone, RefreshCw, Reply, Search, UserCheck, UserPlus, UserX, X } from "lucide-react";
 import type { ClientItem, ClientReason, Contact } from "@shared/types";
 import { createContact, relativeTime } from "@shared/merge";
@@ -33,7 +34,7 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   const contacts = useContactsStore((s) => s.contacts);
   const m365 = useContactsStore((s) => s.m365);
   const cfg = useContactsStore((s) => s.settings.clients);
-  const talkdesk = useContactsStore((s) => s.settings.dialer.id === "talkdesk");
+  const copyCall = useContactsStore((s) => callCopiesNumber(s.settings.dialer.id));
   const sfInstance = useContactsStore((s) => s.sf.instanceUrl);
   const showToast = useContactsStore((s) => s.showToast);
   const platform = useContactsStore((s) => s.platform);
@@ -206,7 +207,7 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
           ) : null}
           {call && contact ? (
             <button type="button" className="fu-btn" onClick={() => void run(window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }))}>
-              <Phone className="h-3 w-3" /> {talkdesk ? "Copy for call" : "Call"}
+              <Phone className="h-3 w-3" /> {copyCall ? "Copy for call" : "Call"}
             </button>
           ) : null}
           {contact ? (

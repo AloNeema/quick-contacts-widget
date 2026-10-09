@@ -1,4 +1,5 @@
 import { Clock } from "lucide-react";
+import { callCopiesNumber } from "@shared/dialer";
 import type { Contact } from "@shared/types";
 import { preferredPhone } from "@shared/phone";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
@@ -7,7 +8,7 @@ import { Avatar } from "./Avatar";
 
 /** The people you actually contact, newest first. Click to call, Alt-click to text, Shift-click to email. */
 export function RecentsStrip({ contacts, photosBaseUrl }: { contacts: Contact[]; photosBaseUrl: string }) {
-  const talkdesk = useContactsStore((s) => s.settings.dialer.id === "talkdesk");
+  const copyCall = useContactsStore((s) => callCopiesNumber(s.settings.dialer.id));
   const showToast = useContactsStore((s) => s.showToast);
   const presence = useContactsStore((s) => s.presence);
 
@@ -32,7 +33,7 @@ export function RecentsStrip({ contacts, photosBaseUrl }: { contacts: Contact[];
               <button
                 type="button"
                 onClick={(e) => void act(c, e)}
-                aria-label={`${talkdesk ? "Copy calling number for" : "Call"} ${c.name}`}
+                aria-label={`${copyCall ? "Copy calling number for" : "Call"} ${c.name}`}
                 className="group/recent flex w-14 shrink-0 flex-col items-center gap-1 rounded-xl py-1 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
                 <Avatar contact={c} photosBaseUrl={photosBaseUrl} size={38} presence={c.m365?.kind === "user" ? presence[c.m365.id] : undefined} />

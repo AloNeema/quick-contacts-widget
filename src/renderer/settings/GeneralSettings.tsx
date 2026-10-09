@@ -73,7 +73,7 @@ export function GeneralSettings() {
         </div>
         <p className="text-xs text-muted-foreground">
           Press it anywhere in Windows to pop the widget up with the search box focused. Type a name, then <kbd>Enter</kbd> calls the top match,
-          <kbd> Alt+Enter</kbd> texts, <kbd>Shift+Enter</kbd> emails, <kbd>Esc</kbd> hides. With Talkdesk, Enter and Alt+Enter copy the preferred number.
+          <kbd> Alt+Enter</kbd> texts, <kbd>Shift+Enter</kbd> emails, <kbd>Esc</kbd> hides. With Talkdesk (copy only), Enter and Alt+Enter copy the preferred number; with the Talkdesk app, Alt+Enter copies the texting number.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Input
