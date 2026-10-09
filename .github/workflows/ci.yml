@@ -25,6 +25,22 @@ jobs:
         run: npm run dist:mac
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Verify signature and launch the packaged app
+        run: |
+          set -euo pipefail
+          find release -maxdepth 2 -name '*.app' -print0 | while IFS= read -r -d '' app; do
+            echo "Checking $app"; codesign --verify --deep --strict --verbose=2 "$app"
+          done
+          # The runner is Apple Silicon: the arm64 build must start and stay running.
+          app=$(find release -maxdepth 2 -path '*arm64*' -name '*.app' | head -n 1)
+          "$app/Contents/MacOS/QCF Contacts" --hidden > launch.log 2>&1 &
+          pid=$!
+          sleep 15
+          if ! kill -0 "$pid" 2>/dev/null; then
+            echo "The packaged app exited during startup:"; cat launch.log; exit 1
+          fi
+          kill "$pid"
+          echo "Packaged app started and stayed running."
       - uses: actions/upload-artifact@v5
         with:
           name: qcf-contacts-macos
