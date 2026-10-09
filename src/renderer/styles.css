@@ -431,6 +431,20 @@
     backdrop-filter: blur(18px) saturate(1.4);
     box-shadow: 0 12px 32px rgb(0 0 0 / 0.4), inset 0 1px 0 hsl(0 0% 100% / 0.12), inset 0 0 0 1px hsl(0 0% 100% / 0.06);
   }
+  /* Reading pane over the Clients list: opaque, because any alpha in a transparent window lets the rows show through. */
+  .email-preview {
+    color: hsl(var(--foreground));
+    background: hsl(var(--glass-bg));
+  }
+  /* Error banners readable in both themes. */
+  .alert-error {
+    color: rgb(254 226 226);
+    background: rgb(239 68 68 / 0.15);
+  }
+  :root[data-theme="light"] .alert-error {
+    color: rgb(153 27 27);
+    background: rgb(239 68 68 / 0.12);
+  }
   .menu-item {
     display: flex;
     width: 100%;

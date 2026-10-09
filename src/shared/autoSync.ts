@@ -14,12 +14,20 @@ export function singleFlight<T>(work: () => Promise<T>): () => Promise<T> {
 export function createAutoSyncScheduler(tasks: Array<() => Promise<void>>, onError: (error: unknown) => void) {
   let active = false;
   let running = false;
+  // A request that lands mid-run (e.g. signing in during the startup sync) runs again afterwards.
+  let rerun = false;
   let interval: ReturnType<typeof setInterval> | undefined;
   let delayed: ReturnType<typeof setTimeout> | undefined;
 
-  const run = async () => {
-    if (!active || running) return;
+  const run = async (requested = false): Promise<void> => {
+    if (!active) return;
+    if (running) {
+      // Scheduled ticks are skipped while busy; an explicit request is remembered.
+      if (requested) rerun = true;
+      return;
+    }
     running = true;
+    rerun = false;
     try {
       for (const task of tasks) {
         if (!active) break;
@@ -29,13 +37,17 @@ export function createAutoSyncScheduler(tasks: Array<() => Promise<void>>, onErr
     } finally {
       running = false;
     }
+    if (rerun && active) {
+      rerun = false;
+      await run();
+    }
   };
   const request = () => {
     if (!active) return;
     if (delayed) clearTimeout(delayed);
     delayed = setTimeout(() => {
       delayed = undefined;
-      void run();
+      void run(true);
     }, AUTO_SYNC_DELAY_MS);
   };
   return {

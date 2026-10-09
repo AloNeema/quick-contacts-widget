@@ -1,4 +1,4 @@
-import { desktopMessageEntryId } from "./m365";
+import { desktopMessageEntryId, fetchMessagePreview } from "./m365";
 import { openInClassicOutlook } from "./outlookDesktop";
 /**
  * Clients service: every 15 minutes while signed in to Microsoft 365, read
@@ -12,7 +12,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { buildCandidates, computeClients, domainOf, excludedLenderDomains, stampFirstSeen } from "@shared/clients";
 import { createContact } from "@shared/merge";
-import type { ClientCandidate, ClientMark, ClientsState, Contact, SalesforceRecordLink } from "@shared/types";
+import type { ClientCandidate, ClientEmailPreview, ClientMark, ClientsState, Contact, SalesforceRecordLink } from "@shared/types";
 import { fetchRecentMail, isM365SignedIn, myMailAddresses } from "./m365";
 import { isSalesforceSignedIn, salesforceClientLinks } from "./salesforce";
 import { getState, setContacts } from "./store";
@@ -190,5 +190,18 @@ export async function openClientEmail(email: string, messageId: string, action: 
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not open this email in Classic Outlook." };
+  }
+}
+
+/** Read a listed client's latest email for the in-widget preview; same listed-message check as opening it. */
+export async function previewClientEmail(email: string, messageId: string): Promise<{ ok: true; preview: ClientEmailPreview } | { ok: false; error: string }> {
+  try {
+    await load();
+    const item = getClientsState().items.find((client) => client.email === email.toLowerCase());
+    if (!item || !item.lastMessageId || item.lastMessageId !== messageId) return { ok: false, error: "The inbox list changed or needs a refresh. Check your inbox, then click the email again." };
+    const preview = await fetchMessagePreview(messageId);
+    return { ok: true, preview: { ...preview, direction: item.lastDirection } };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not load this email." };
   }
 }

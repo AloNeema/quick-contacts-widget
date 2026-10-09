@@ -118,7 +118,9 @@ Connected Microsoft 365 and Salesforce accounts sync shortly after launch or sig
 
 Dark and acrylic panel backgrounds now use valid color values with a minimum 86% opacity; new setups default to 90%. Solid menus and inline client options prevent text from other rows showing through. The opacity slider reports the effective value for older low-opacity settings.
 
-Clients show a two-line preview of the latest email. Click its subject to open that same message in Outlook. Salesforce buttons open matched Contacts or Leads, including inbox clients not yet saved to the widget. Inbox-only record shortcuts appear after the next inbox scan. Existing contact detail cards also offer the Salesforce shortcut before deal loading finishes.
+Clients show a two-line preview of the latest email. Click the subject or preview to read the whole email in the widget: sender, recipients, attachment names and the newest message, with earlier messages one click away. Reply and Open in Outlook sit at the bottom; Esc goes back. On Windows these use Classic Outlook and fall back to Outlook on the web (or a new email) when it isn't available. The ⋯ menu still opens the message in Outlook directly.
+
+To read more at once, drag the panel's edge or corner grip to make it wider. Docked to the right edge, the grip and edge handle sit on the left and the panel grows into the screen; the docked width is remembered. Salesforce buttons open matched Contacts or Leads, including inbox clients not yet saved to the widget. Inbox-only record shortcuts appear after the next inbox scan. Existing contact detail cards also offer the Salesforce shortcut before deal loading finishes.
 
 ## Classic Outlook desktop opening (0.1.4-beta.8)
 

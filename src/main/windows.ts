@@ -50,7 +50,9 @@ export function dockBounds(expanded: boolean): WindowBounds {
   const a = display.workArea;
   const height = Math.min(a.height, Math.max(WIDGET_MIN_SIZE.height, settings.dock.height ?? Math.round(a.height * 0.7)));
   const y = Math.min(a.y + a.height - height, Math.max(a.y, settings.dock.y ?? a.y + Math.round((a.height - height) / 2)));
-  const width = expanded ? Math.max(WIDGET_MIN_SIZE.width, settings.bounds?.width ?? WIDGET_DEFAULT_SIZE.width) : DOCK_STRIP_WIDTH;
+  const width = expanded
+    ? Math.min(a.width, Math.max(WIDGET_MIN_SIZE.width, settings.dock.width ?? settings.bounds?.width ?? WIDGET_DEFAULT_SIZE.width))
+    : DOCK_STRIP_WIDTH;
   const x = settings.dock.side === "right" ? a.x + a.width - width : a.x;
   return { x, y, width, height };
 }
@@ -124,9 +126,9 @@ export function createWidgetWindow(opts: { startHidden?: boolean } = {}): Browse
       if (!w) return;
       const { settings: s } = getState();
       if (s.dock.enabled) {
-        // Only the strip's vertical placement is user-adjustable while docked.
+        // Docked: vertical placement, height and (when expanded) the panel width are user-adjustable.
         const b = w.getBounds();
-        void patchSettings({ dock: { ...s.dock, y: b.y, height: b.height } });
+        void patchSettings({ dock: { ...s.dock, y: b.y, height: b.height, ...(dockExpanded ? { width: b.width } : {}) } });
         return;
       }
       void patchSettings({ bounds: w.getBounds() });
@@ -179,11 +181,16 @@ export function resizeWidgetBy(dx: number, dy: number): void {
   const win = getWidgetWindow();
   if (!win) return;
   const b = win.getBounds();
-  if (getState().settings.dock.enabled) {
-    // Docked: only height changes, anchored to the screen edge.
-    const display = screen.getDisplayMatching(b).workArea;
-    const height = Math.min(Math.max(WIDGET_MIN_SIZE.height, b.height + dy), display.height);
-    win.setBounds({ ...b, height });
+  const { dock } = getState().settings;
+  if (dock.enabled) {
+    // Docked: the panel stays anchored to its screen edge. Height always changes; width only while
+    // expanded (the collapsed strip has a fixed width). On the right edge, dragging left widens it.
+    const a = screen.getDisplayMatching(b).workArea;
+    const height = Math.min(Math.max(WIDGET_MIN_SIZE.height, b.height + dy), a.height);
+    const grow = dock.side === "right" ? -dx : dx;
+    const width = dockExpanded ? Math.min(Math.max(WIDGET_MIN_SIZE.width, b.width + grow), a.width) : b.width;
+    const x = dock.side === "right" ? a.x + a.width - width : a.x;
+    win.setBounds({ x, y: b.y, width, height });
     return;
   }
   const display = screen.getDisplayMatching(b).workArea;

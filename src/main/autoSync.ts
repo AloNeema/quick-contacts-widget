@@ -5,10 +5,15 @@ import { refreshStatus, syncContacts } from "./m365";
 import { sfRefreshStatus, sfSync } from "./salesforce";
 import { getState } from "./store";
 import { broadcast } from "./windows";
+import { refreshTrayMenu } from "./tray";
+import { contactsChangedForClients } from "./clients";
 
+// Same refresh as a manual sync: widget, tray menu and the Clients list's contact links.
 function publishContacts() {
   const { settings, contacts } = getState();
   broadcast(IPC.stateChanged, { settings, contacts });
+  refreshTrayMenu();
+  contactsChangedForClients();
 }
 
 const scheduler = createAutoSyncScheduler([

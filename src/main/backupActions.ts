@@ -1,4 +1,5 @@
 import { app, dialog, shell } from "electron";
+import { ZodError } from "zod";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import { backupDirectory, captureSetup, readBackup, stageRestore, writeBackup } from "./backup";
@@ -59,5 +60,15 @@ export async function backupAction(action: "save" | "restore" | "regular" | "fol
     await stageRestore(profile, backup);
     setTimeout(() => { app.relaunch({ execPath: process.env.PORTABLE_EXECUTABLE_FILE || process.execPath }); app.quit(); }, 250);
     return { message: "Restarting to restore your saved setup…" };
+  } catch (error) {
+    // A schema or JSON failure would otherwise reach the toast as a raw validation dump.
+    if (error instanceof ZodError || error instanceof SyntaxError) {
+      throw new Error(
+        action === "regular"
+          ? "The regular app's saved setup couldn't be read. Open the regular app once so it can repair its file, then try again."
+          : "That setup couldn't be read. The file may be damaged or from a different version of the app.",
+      );
+    }
+    throw error;
   } finally { busy = false; }
 }

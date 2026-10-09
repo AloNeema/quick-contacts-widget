@@ -1,4 +1,4 @@
-import type { ClientsState, Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, UpdateStatus } from "./types";
+import type { ClientEmailPreview, ClientsState, Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, UpdateStatus } from "./types";
 
 export const IPC = {
   backupStatus: "backup:status",
@@ -38,6 +38,7 @@ export const IPC = {
   clientsGet: "clients:get",
   clientsScan: "clients:scan",
   clientsOpenEmail: "clients:open-email",
+  clientsPreviewEmail: "clients:preview-email",
   clientsMark: "clients:mark",
   clientsAddContact: "clients:add-contact",
   clientsRestoreHidden: "clients:restore-hidden",
@@ -107,6 +108,8 @@ export interface ContactsApi {
   getClients(): Promise<ClientsState>;
   scanClients(): Promise<ClientsState>;
   openClientEmail(email: string, messageId: string, action: "open" | "reply"): Promise<{ ok: true } | { ok: false; error: string }>;
+  /** Read a listed client's latest email (plain text) for the in-widget preview. */
+  previewClientEmail(email: string, messageId: string): Promise<{ ok: true; preview: ClientEmailPreview } | { ok: false; error: string }>;
   /** hide: off the list until they email again; notClient: never show; restore: undo either. */
   markClient(email: string, action: "hide" | "notClient" | "restore"): Promise<ClientsState>;
   addClientContact(email: string): Promise<Contact[]>;

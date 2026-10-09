@@ -17,8 +17,9 @@ import {
 } from "@azure/msal-node";
 import { M365_SCOPES } from "@shared/defaults";
 import { applySyncChanges } from "@shared/merge";
+import { splitEmailText } from "@shared/emailText";
 import { singleFlight } from "@shared/autoSync";
-import type { MailMessageLite, ContactContext, M365Status, M365SyncSummary, PresenceAvailability, PresenceMap } from "@shared/types";
+import type { ClientEmailPreview, MailMessageLite, ContactContext, M365Status, M365SyncSummary, PresenceAvailability, PresenceMap } from "@shared/types";
 import { getState, photosDir, setContacts } from "./store";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
@@ -505,4 +506,38 @@ export async function desktopMessageEntryId(messageId: string): Promise<{ entryI
   const addresses = await myMailAddresses();
   if (!addresses.length) throw new Error("Could not identify the Microsoft mailbox. Try signing in again.");
   return { entryId, addresses };
+}
+
+interface GraphFullMessage extends GraphMailItem {
+  body?: { contentType?: string; content?: string };
+}
+
+/** One message as plain text (Graph converts HTML server-side), plus its file attachments' names. */
+export async function fetchMessagePreview(messageId: string): Promise<Omit<ClientEmailPreview, "direction">> {
+  const accessToken = await token();
+  if (!accessToken) throw new Error("Sign in to Microsoft 365 again to read this email.");
+  const id = encodeURIComponent(messageId);
+  const m = await graph<GraphFullMessage>(
+    accessToken,
+    `/me/messages/${id}?$select=id,subject,receivedDateTime,sentDateTime,from,toRecipients,ccRecipients,hasAttachments,webLink,body`,
+    { headers: { Prefer: 'outlook.body-content-type="text"' } },
+  );
+  if (!m) throw new Error("This message may have moved or been deleted. Check your inbox, then try again.");
+  let attachments: { name: string; size: number }[] = [];
+  if (m.hasAttachments) {
+    const list = await graph<{ value: { name?: string; size?: number; isInline?: boolean }[] }>(accessToken, `/me/messages/${id}/attachments?$select=name,size,isInline`).catch(() => null);
+    attachments = (list?.value ?? []).filter((a) => !a.isInline && a.name).map((a) => ({ name: a.name!, size: a.size ?? 0 }));
+  }
+  const parties = (list?: GraphMailItem["toRecipients"]) => (list ?? []).map(addr).filter((v): v is Party => Boolean(v));
+  return {
+    messageId,
+    subject: m.subject ?? "",
+    at: m.receivedDateTime ?? m.sentDateTime ?? "",
+    from: addr(m.from),
+    to: parties(m.toRecipients),
+    cc: parties(m.ccRecipients),
+    ...splitEmailText(m.body?.content ?? m.bodyPreview ?? ""),
+    attachments,
+    webLink: m.webLink,
+  };
 }
