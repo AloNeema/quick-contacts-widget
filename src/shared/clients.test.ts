@@ -156,3 +156,14 @@ describe("desktop email selection", () => {
     expect(client).toMatchObject({ lastMessageId: "latest-id", lastSubject: "Follow-up", lastPreview: "Checking in", lastDirection: "out" });
   });
 });
+
+describe("clear all", () => {
+  it("hidden clients stay off the list until they email again", () => {
+    const at = "2026-10-01T00:00:00Z";
+    const c = candidate({ email: "a@biz.com", lastInboundAt: at, repliedToYou: true, inboundCount: 2 });
+    const marks = { "a@biz.com": { hiddenAt: "2026-10-02T00:00:00Z" } };
+    expect(computeClients([c], [], marks, new Set(), {}, undefined).items).toHaveLength(0);
+    const later = { ...c, lastInboundAt: "2026-10-03T00:00:00Z" };
+    expect(computeClients([later], [], marks, new Set(), {}, undefined).items).toHaveLength(1);
+  });
+});

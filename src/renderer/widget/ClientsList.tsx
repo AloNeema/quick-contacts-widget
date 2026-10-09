@@ -39,6 +39,9 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
   const platform = useContactsStore((s) => s.platform);
   const [opening, setOpening] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<string | null>(null);
+  // Clear all: confirm inline, then offer Undo for the batch just cleared.
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [cleared, setCleared] = useState<string[] | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -102,6 +105,25 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
     if (!root) return;
     for (const el of Array.from(root.children)) if (!el.classList.contains("email-preview")) el.toggleAttribute("inert", Boolean(previewItem));
   });
+  useEffect(() => {
+    if (!cleared) return;
+    const t = setTimeout(() => setCleared(null), 15_000);
+    return () => clearTimeout(t);
+  }, [cleared]);
+  const clearVisible = async () => {
+    const emails = visible.map((i) => i.email);
+    setConfirmClear(false);
+    setMenu(null);
+    if (!emails.length) return;
+    useContactsStore.setState({ clients: await window.contacts.markClients(emails, "hide") });
+    void window.contacts.markClientsViewed();
+    setCleared(emails);
+  };
+  const undoClear = async () => {
+    if (!cleared) return;
+    useContactsStore.setState({ clients: await window.contacts.markClients(cleared, "restore") });
+    setCleared(null);
+  };
   const mark = async (i: ClientItem, action: "hide" | "notClient") => {
     setMenu(null);
     useContactsStore.setState({ clients: await window.contacts.markClient(i.email, action) });
@@ -292,13 +314,43 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
           </button>
         ))}
       </div>
-      <p className="no-drag px-3.5 pb-1.5 text-[11px] text-muted-foreground" aria-live="polite">
-        {state.scanning
-          ? "Checking your inbox…"
-          : state.lastScanAt
-            ? `Last ${cfg.lookbackDays} days of email · checked ${relativeTime(state.lastScanAt)}${state.hiddenCount ? ` · ${state.hiddenCount} removed` : ""}`
-            : "Not checked yet"}
-      </p>
+      <div className="no-drag flex items-center gap-2 px-3.5 pb-1.5">
+        <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground" aria-live="polite">
+          {state.scanning
+            ? "Checking your inbox…"
+            : state.lastScanAt
+              ? `Last ${cfg.lookbackDays} days of email · checked ${relativeTime(state.lastScanAt)}${state.hiddenCount ? ` · ${state.hiddenCount} removed` : ""}`
+              : "Not checked yet"}
+        </p>
+        {visible.length > 0 && !confirmClear ? (
+          <button type="button" className="shrink-0 text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline" onClick={() => setConfirmClear(true)}>
+            {query || filter !== "all" ? `Clear these ${visible.length}` : "Clear all"}
+          </button>
+        ) : null}
+      </div>
+      {confirmClear ? (
+        <div role="alertdialog" aria-label="Clear clients" className="no-drag mx-3 mb-2 rounded-xl border bg-popover px-3 py-2 text-[12px] text-popover-foreground">
+          <p className="leading-snug">
+            Clear {visible.length === 1 ? "this client" : `these ${visible.length} clients`} from the list? Anyone who emails you again comes back.
+          </p>
+          <div className="mt-2 flex gap-1.5">
+            <button type="button" className="fu-btn fu-btn-primary" autoFocus onClick={() => void clearVisible()}>
+              Clear {visible.length}
+            </button>
+            <button type="button" className="fu-btn" onClick={() => setConfirmClear(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {cleared ? (
+        <div role="status" className="no-drag mx-3 mb-2 flex items-center gap-2 rounded-xl bg-foreground/[0.07] px-3 py-1.5 text-[12px]">
+          <span className="min-w-0 flex-1">Cleared {cleared.length === 1 ? "1 client" : `${cleared.length} clients`}.</span>
+          <button type="button" className="shrink-0 font-medium underline underline-offset-2" onClick={() => void undoClear()}>
+            Undo
+          </button>
+        </div>
+      ) : null}
       {!m365.signedIn ? (
         <div role="alert" className="mx-3 mb-2 flex items-start gap-2 rounded-lg alert-error px-2.5 py-1.5 text-[12px]">
           <span className="min-w-0 flex-1">Microsoft 365 needs you to sign in again. The list below is from the last successful check.</span>
@@ -328,7 +380,11 @@ export function ClientsList({ photosBaseUrl, compact, filter, onFilterChange }: 
               </button>
             </div>
           ) : (
-            <Empty title="No clients yet" body="When someone outside the company emails you and looks like a client, they'll show up here." />
+            state.hiddenCount ? (
+              <Empty title="All caught up" body="New clients show up here as they email you. Cleared clients come back only if they write again." />
+            ) : (
+              <Empty title="No clients yet" body="When someone outside the company emails you and looks like a client, they'll show up here." />
+            )
           )
         ) : (
           <ul className="space-y-1">

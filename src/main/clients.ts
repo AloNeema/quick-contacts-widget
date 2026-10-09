@@ -143,6 +143,19 @@ export async function markClient(email: string, action: "hide" | "notClient" | "
   return emit();
 }
 
+/** "Clear all": hide many listed clients at once (they return if they email again), or undo that. */
+export async function markClients(emails: string[], action: "hide" | "restore"): Promise<ClientsState> {
+  await load();
+  const now = new Date().toISOString();
+  for (const email of emails) {
+    const key = email.toLowerCase();
+    if (action === "restore") delete data.marks[key];
+    else if (!data.marks[key]?.notClient) data.marks[key] = { hiddenAt: now };
+  }
+  await save();
+  return emit();
+}
+
 export async function restoreHiddenClients(): Promise<number> {
   await load();
   const n = Object.keys(data.marks).length;
