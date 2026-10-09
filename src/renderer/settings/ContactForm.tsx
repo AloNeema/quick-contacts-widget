@@ -10,6 +10,7 @@ import { Label } from "@renderer/components/ui/label";
 import { Avatar } from "@renderer/widget/Avatar";
 import { useContactsStore } from "@renderer/store/useContacts";
 import type { SignatureDraft } from "@shared/signature";
+import { finalizeContactDraft } from "@shared/contactDraft";
 
 export function ContactForm({ contact, signature, onClose, onOpenExisting }: { contact: Contact | null; signature?: SignatureDraft; onClose: () => void; onOpenExisting?: (contact: Contact) => void }) {
   const contacts = useContactsStore((s) => s.contacts);
@@ -79,31 +80,10 @@ export function ContactForm({ contact, signature, onClose, onOpenExisting }: { c
 
   const submit = async () => {
     if (saving) return;
-    const name = draft.name.trim();
-    const phone = phoneText.trim() ? normalizeUsPhone(phoneText) : "";
-    const mobilePhone = mobileText.trim() ? normalizeUsPhone(mobileText) : "";
-    const email = draft.email?.trim() ? normalizeEmail(draft.email) : "";
-    if (!name) return setError("Name is required.");
-    if (phoneText.trim() && !phone) return setError("Office phone must be a 10-digit US number.");
-    if (mobileText.trim() && !mobilePhone) return setError("Cell phone must be a 10-digit US number.");
-    if (draft.email?.trim() && !email) return setError("That email address doesn't look right.");
-    if (!phone && !mobilePhone && !email) return setError("Add a phone number or an email so the quick actions have something to use.");
-    const now = new Date().toISOString();
-    const next: Contact = {
-      ...draft,
-      name,
-      title: draft.title?.trim() || undefined,
-      company: draft.company?.trim() || undefined,
-      linkedinUrl: draft.linkedinUrl?.trim() || undefined,
-      website: draft.website?.trim() || undefined,
-      group: draft.group?.trim() || undefined,
-      notes: draft.notes?.trim() || undefined,
-      phone: phone || undefined,
-      mobilePhone: mobilePhone || undefined,
-      email: email || undefined,
-      hue: contact ? draft.hue : hueForName(name),
-      updatedAt: now,
-    };
+    const result = finalizeContactDraft(draft, phoneText, mobileText, { keepHue: Boolean(contact) });
+    if ("error" in result) return setError(result.error);
+    const next = result.contact;
+    const name = next.name;
     setSaving(true);
     try {
       setContacts(await window.contacts.upsertContact(next));
