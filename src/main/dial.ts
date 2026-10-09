@@ -1,4 +1,4 @@
-import { buildDialUri, fillPhoneTemplate } from "@shared/dialer";
+import { buildDialUri, callCopiesNumber, fillPhoneTemplate, textCopiesNumber } from "@shared/dialer";
 import type { DialRequest } from "@shared/ipc";
 import type { DialerProvider } from "@shared/types";
 
@@ -11,11 +11,11 @@ interface DialServices {
 
 export async function dispatchDial(provider: DialerProvider, req: DialRequest, services: DialServices): Promise<Result> {
   try {
-    if (provider.id === "talkdesk") {
+    if ((req.action === "call" ? callCopiesNumber : textCopiesNumber)(provider.id)) {
       fillPhoneTemplate("{e164}", req.phone);
       services.copy(req.phone);
       return { ok: true, message: req.action === "sms"
-        ? "Number copied. Paste it into Talkdesk SMS. No message was sent."
+        ? "Number copied. Paste it into a new Talkdesk SMS. No message was sent."
         : "Number copied. Paste it into the Talkdesk dialer." };
     }
     const result = await services.openExternal(buildDialUri(provider, req.action, req.phone));

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { callCopiesNumber, textCopiesNumber } from "@shared/dialer";
 import { Briefcase, CalendarClock, Copy, ExternalLink, Loader2, Mail, MessageSquare, Phone, StickyNote, Video } from "lucide-react";
 import type { Contact, ContactContext, SalesforceDeals } from "@shared/types";
 import { fmtMoney } from "./ContactRow";
@@ -21,7 +22,8 @@ function fmtWhen(iso: string): string {
 
 /** Inline drawer under a row: note, last email and next meeting (Outlook), plus a link into the record. */
 export function ContactDetails({ contact }: { contact: Contact }) {
-  const talkdesk = useContactsStore((s) => s.settings.dialer.id === "talkdesk");
+  const copyCall = useContactsStore((s) => callCopiesNumber(s.settings.dialer.id));
+  const copyText = useContactsStore((s) => textCopiesNumber(s.settings.dialer.id));
   const call = preferredPhone(contact, "call");
   const text = preferredPhone(contact, "sms");
   const showToast = useContactsStore((s) => s.showToast);
@@ -64,10 +66,10 @@ export function ContactDetails({ contact }: { contact: Contact }) {
         {call && text ? (
           <>
             <button type="button" className="fu-btn fu-btn-primary" title={formatPhoneForDisplay(call.phone)} onClick={() => void window.contacts.dial({ action: "call", phone: call.phone, contactId: contact.id }).then((r) => { if (!r.ok) showToast(r.error, "error"); else if (r.message) showToast(r.message); })}>
-              <Phone className="h-3 w-3" /> {talkdesk ? "Copy for call" : "Call"} {call.label}
+              <Phone className="h-3 w-3" /> {copyCall ? "Copy for call" : "Call"} {call.label}
             </button>
             <button type="button" className="fu-btn" title={formatPhoneForDisplay(text.phone)} onClick={() => void window.contacts.dial({ action: "sms", phone: text.phone, contactId: contact.id }).then((r) => { if (!r.ok) showToast(r.error, "error"); else if (r.message) showToast(r.message); })}>
-              {talkdesk ? <Copy className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />} {talkdesk ? "Copy for text" : "Text"} {text.label}
+              {copyText ? <Copy className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />} {copyText ? "Copy for text" : "Text"} {text.label}
             </button>
           </>
         ) : null}

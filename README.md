@@ -12,6 +12,8 @@ Version 0.1.4-beta.4 adds **Settings → Contacts → Paste signature**. Copy on
 
 Version 0.1.4-beta.3 simplifies **Talkdesk** to **Copy for call** and **Copy for text**. Paste the starred number into Workspace Desktop. No browser page is opened and copying does not update contact history. Settings → General now includes **Save backup**, **Restore backup**, automatic checkpoints and **Copy setup from regular app** in previews. Backups preserve Microsoft app ID/tenant, Salesforce consumer key, contacts, preferences, images and Clients hide/not-client choices. Sign-ins and the updater token are not exported. Preview builds use a separate **QCF Contacts Preview** profile, leave the regular app's OS startup setting unchanged and are updated manually. Use the portable preview for testing; the installer still shares the regular app's identity. See [setup and testing](docs/TALKDESK-PILOT.md).
 
+If Talkdesk Workspace is your computer's default calling app, choose **Settings → Call & Text → Talkdesk app** instead: **Call** opens the number in Talkdesk through its `tel:` link, and **Copy for text** copies the texting number to paste into a new Talkdesk SMS. Talkdesk doesn't register a link for starting texts, so an `sms:` link would open a different app.
+
 ## What it does
 
 - Glass panel you drag anywhere; remembers position and size; hides to the tray instead of closing; optional *Keep on top* and *Start with Windows*.

@@ -7,7 +7,7 @@ import type { Contact, PersistedState, Settings } from "@shared/types";
 import { normalizeOrder } from "@shared/merge";
 
 const dialerSchema = z.object({
-  id: z.enum(["ringcentral", "phonelink", "system", "custom", "talkdesk"]),
+  id: z.enum(["ringcentral", "phonelink", "system", "custom", "talkdesk", "talkdeskApp"]),
   label: z.string(),
   callTemplate: z.string(),
   smsTemplate: z.string(),
