@@ -41,6 +41,7 @@ const api: ContactsApi = {
   openClientEmail: (email, messageId, action) => ipcRenderer.invoke(IPC.clientsOpenEmail, email, messageId, action),
   previewClientEmail: (email, messageId) => ipcRenderer.invoke(IPC.clientsPreviewEmail, email, messageId),
   markClient: (email, action) => ipcRenderer.invoke(IPC.clientsMark, email, action),
+  markClients: (emails, action) => ipcRenderer.invoke(IPC.clientsMarkMany, emails, action),
   addClientContact: (email) => ipcRenderer.invoke(IPC.clientsAddContact, email),
   restoreHiddenClients: () => ipcRenderer.invoke(IPC.clientsRestoreHidden),
   markClientsViewed: () => ipcRenderer.invoke(IPC.clientsViewed),

@@ -58,9 +58,12 @@ export function WidgetPanel() {
     }
   }), [dock.enabled]);
   // Narrow widget: fold the secondary header toggles into a menu so the tabs never collide with them.
-  const [narrow, setNarrow] = useState(() => window.innerWidth < 330);
+  // Both tabs plus the Clients badge and four header buttons need ~370px, so the default 340px
+  // window uses the compact header.
+  const NARROW_HEADER_PX = 380;
+  const [narrow, setNarrow] = useState(() => window.innerWidth < NARROW_HEADER_PX);
   useEffect(() => {
-    const onResize = () => setNarrow(window.innerWidth < 330);
+    const onResize = () => setNarrow(window.innerWidth < NARROW_HEADER_PX);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);

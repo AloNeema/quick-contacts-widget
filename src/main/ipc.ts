@@ -25,7 +25,7 @@ import { applyHotkey } from "./hotkey";
 import { getContactContext, getPresence, refreshStatus, schedulePresence, signIn, signOut, syncContacts } from "./m365";
 import { checkForUpdates, getUpdateStatus, installUpdate, rescheduleUpdates, setUpdateToken } from "./updater";
 import { refreshLogos } from "./logos";
-import { addClientContact, openClientEmail, previewClientEmail, contactsChangedForClients, getClientsState, markClient, markClientsViewed, rescheduleClients, restoreHiddenClients, scanClients } from "./clients";
+import { addClientContact, openClientEmail, previewClientEmail, contactsChangedForClients, getClientsState, markClient, markClients, markClientsViewed, rescheduleClients, restoreHiddenClients, scanClients } from "./clients";
 import { sfDeals, sfRefreshStatus, sfSignIn, sfSignOut, sfSync } from "./salesforce";
 
 const incomingSchema = z.object({
@@ -273,6 +273,9 @@ export function registerIpc(): void {
     refreshLogosSoon();
     return saved;
   });
+  ipcMain.handle(IPC.clientsMarkMany, (_e, rawEmails: unknown, rawAction: unknown) =>
+    markClients(z.array(z.string().email()).max(5000).parse(rawEmails), z.enum(["hide", "restore"]).parse(rawAction)),
+  );
   ipcMain.handle(IPC.clientsRestoreHidden, () => restoreHiddenClients());
   ipcMain.handle(IPC.clientsViewed, () => markClientsViewed());
   ipcMain.handle(IPC.logosRefresh, async (_e, raw: unknown) => {

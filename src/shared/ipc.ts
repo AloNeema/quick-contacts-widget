@@ -40,6 +40,7 @@ export const IPC = {
   clientsOpenEmail: "clients:open-email",
   clientsPreviewEmail: "clients:preview-email",
   clientsMark: "clients:mark",
+  clientsMarkMany: "clients:mark-many",
   clientsAddContact: "clients:add-contact",
   clientsRestoreHidden: "clients:restore-hidden",
   clientsViewed: "clients:viewed",
@@ -114,6 +115,8 @@ export interface ContactsApi {
   markClient(email: string, action: "hide" | "notClient" | "restore"): Promise<ClientsState>;
   addClientContact(email: string): Promise<Contact[]>;
   /** Bring back everyone hidden or marked "not a client". Resolves to how many. */
+  /** Clear all: hide every given client at once, or restore them (undo). */
+  markClients(emails: string[], action: "hide" | "restore"): Promise<ClientsState>;
   restoreHiddenClients(): Promise<number>;
   /** The Clients tab was opened: clears the "new" badge. */
   markClientsViewed(): Promise<ClientsState>;
