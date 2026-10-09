@@ -38,7 +38,15 @@ If Talkdesk Workspace is your computer's default calling app, choose **Settings 
 
 The same app builds for macOS: the CI workflow produces a `.dmg` and `.zip` for `arm64` (M-series) and `x64`. It runs as a menu-bar app (no Dock icon), uses macOS vibrancy for the glass, `⌘⇧C` as the summon hotkey, and the *FaceTime & Messages* dialer preset (`tel:` / `sms:`); RingCentral's Mac app understands the same `rcapp://` links.
 
-Builds are unsigned unless you add an Apple Developer certificate (`CSC_LINK` / `CSC_KEY_PASSWORD`, plus `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` for notarization) to the workflow secrets. An unsigned app opens with **right-click › Open** the first time, and macOS auto-update requires a signed build, so until then Mac users update by downloading the new dmg.
+Builds are ad-hoc signed (free, no Apple account) unless you add an Apple Developer certificate (`CSC_LINK` / `CSC_KEY_PASSWORD`, plus `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` for notarization) to the workflow secrets. Apple Silicon Macs refuse to run an app whose signature is broken, so earlier unsigned builds did nothing when opened; CI now verifies the signature and launches the packaged arm64 app.
+
+Installing an ad-hoc signed build:
+
+1. Open the `.dmg` for your Mac (`arm64` for M-series, `x64` for Intel) and drag **QCF Contacts** into **Applications**.
+2. Open it once. macOS says it can't verify the developer; choose **Done**, then go to **System Settings › Privacy & Security**, scroll down and click **Open Anyway** (on macOS 14 and earlier, **right-click › Open** also works). Alternatively, in Terminal: `xattr -dr com.apple.quarantine "/Applications/QCF Contacts.app"`.
+3. Look for the icon in the menu bar (top right); there is no Dock icon. `⌘⇧C` shows the panel.
+
+macOS auto-update requires a Developer ID signed and notarized build, so until then Mac users update by downloading the new dmg.
 
 To build locally on a Mac: `npm install`, `npm run dev`, or `npx electron-vite build && npx electron-builder --mac`.
 

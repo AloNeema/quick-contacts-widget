@@ -15,6 +15,8 @@ extraResources:
       - tray.ico
       - icon.png
 asar: true
+# Ad-hoc signs the macOS app when no Developer ID is configured (see the script).
+afterPack: scripts/adhoc-sign-mac.cjs
 mac:
   icon: resources/icon.png
   category: public.app-category.productivity
@@ -24,7 +26,7 @@ mac:
     - target: zip
       arch: [arm64, x64]
   artifactName: "${productName}-${version}-${arch}.${ext}"
-  # Unsigned by default; set CSC_LINK / CSC_KEY_PASSWORD and APPLE_* for signing + notarization.
+  # Ad-hoc signed by default (afterPack); set CSC_LINK / CSC_KEY_PASSWORD and APPLE_* for Developer ID signing + notarization.
   identity: null
   hardenedRuntime: false
   extendInfo:
