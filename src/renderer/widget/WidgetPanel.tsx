@@ -1,7 +1,8 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, MoreHorizontal, PanelLeftClose, PanelRightClose, Pin, PinOff, Reply, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronRight, MoreHorizontal, Plus, PanelLeftClose, PanelRightClose, Pin, PinOff, Reply, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
 import { ClientsList, type ClientFilter } from "./ClientsList";
 import { SortMenu } from "./SortMenu";
+import { QuickAdd } from "./QuickAdd";
 import { filterContacts, groupsOf, recentContacts } from "@shared/merge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
 import { cn } from "@renderer/lib/utils";
@@ -68,6 +69,12 @@ export function WidgetPanel() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [quickAdd, setQuickAdd] = useState(false);
+  const quickAddRef = useRef<HTMLButtonElement>(null);
+  const closeQuickAdd = useCallback(() => {
+    setQuickAdd(false);
+    requestAnimationFrame(() => quickAddRef.current?.focus());
+  }, []);
   const openWaiting = () => {
     setClientFilter("waiting");
     setTab("clients");
@@ -224,6 +231,16 @@ export function WidgetPanel() {
             />
           </div>
           <SortMenu value={settings.sort} onChange={(sort) => void updateSettings({ sort })} />
+          <button
+            ref={quickAddRef}
+            type="button"
+            aria-label="Add a contact from an email signature"
+            title="Add a contact from an email signature"
+            onClick={() => setQuickAdd(true)}
+            className="no-drag glass-inset inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Answer "who's waiting on me?" from the first screen, and jump straight to those records. */}
@@ -293,6 +310,8 @@ export function WidgetPanel() {
             {toast.message}
           </div>
         ) : null}
+
+        {quickAdd ? <QuickAdd onClose={closeQuickAdd} /> : null}
 
         {/* Resize from the inner edge: docked to the right, the panel grows leftwards. */}
         <ResizeEdge side={dock.enabled && dock.side === "right" ? "left" : "right"} />
