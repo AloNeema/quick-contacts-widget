@@ -69,6 +69,28 @@ export function WidgetPanel() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
   const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  // The ⋯ menu closes on a click outside it or Esc, not only when the pointer leaves it.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!moreRef.current?.contains(e.target as Node)) setMoreOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        // Stop here so the search box's Esc (which hides the widget) doesn't also run.
+        e.preventDefault();
+        e.stopPropagation();
+        setMoreOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [moreOpen]);
   const [quickAdd, setQuickAdd] = useState(false);
   const quickAddRef = useRef<HTMLButtonElement>(null);
   const closeQuickAdd = useCallback(() => {
@@ -139,7 +161,8 @@ export function WidgetPanel() {
     <div className={cn("h-full w-full", acrylic || dock.enabled ? "p-0" : "p-2")}>
       <div className="glass-panel flex h-full w-full flex-col">
         {/* Header: the only drag region */}
-        <header className={cn("relative z-10 flex items-center gap-2 px-3.5 pb-1.5 pt-3.5", dock.enabled ? "no-drag" : "drag")}>
+        {/* z-40: the header's ⋯ menu drops over the search row (z-30) and lists; at z-10 they covered it and took its clicks. */}
+        <header className={cn("relative z-40 flex items-center gap-2 px-3.5 pb-1.5 pt-3.5", dock.enabled ? "no-drag" : "drag")}>
           <div className="flex min-w-0 flex-1 items-center gap-1" role="tablist">
             <span className="status-dot mr-1 h-2 w-2 shrink-0 rounded-full" aria-hidden />
             <button
@@ -168,7 +191,7 @@ export function WidgetPanel() {
             </button>
           </div>
           {narrow ? (
-            <div className="relative">
+            <div ref={moreRef} className="relative">
               <HeaderButton label="More window options" active={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </HeaderButton>
