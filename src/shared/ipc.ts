@@ -3,6 +3,7 @@ import type { ClientEmailPreview, ClientsState, Contact, ContactContext, DialAct
 export const IPC = {
   backupStatus: "backup:status",
   backupAction: "backup:action",
+  contactsExport: "contacts:export",
   stateGet: "state:get",
   contactsSave: "contacts:save",
   contactsReorder: "contacts:reorder",
@@ -71,6 +72,8 @@ export interface DialRequest {
 export interface ContactsApi {
   backupStatus(): Promise<{ preview: boolean; error?: string }>;
   backupAction(action: "save" | "restore" | "regular" | "folder"): Promise<{ message?: string }>;
+  /** Save every contact as a vCard (.vcf) file for Google Contacts, Outlook or a phone. */
+  exportContacts(): Promise<{ ok: true; count: number; fileName: string } | { ok: false; canceled: true } | { ok: false; error: string }>;
   getState(): Promise<{ settings: Settings; contacts: Contact[]; photosBaseUrl: string; platform: string; version: string }>;
   saveContacts(contacts: Contact[]): Promise<Contact[]>;
   reorderContact(id: string, targetId: string, side: "before" | "after", sort: Settings["sort"]): Promise<{ contacts: Contact[]; settings: Settings }>;

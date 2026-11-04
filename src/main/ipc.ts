@@ -1,5 +1,8 @@
 import { requestAutoSync } from "./autoSync";
-import { app, BrowserWindow, clipboard, ipcMain, shell } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from "electron";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { contactsToVCard } from "@shared/vcard";
 import { z } from "zod";
 import { IPC } from "@shared/ipc";
 import { buildLinkedinUri, buildMailtoUri } from "@shared/dialer";
@@ -80,6 +83,24 @@ async function openExternalSafe(uri: string): Promise<Result> {
 export function registerIpc(): void {
   ipcMain.handle(IPC.backupStatus, () => backupStatus());
   ipcMain.handle(IPC.backupAction, (_e, action: unknown) => backupAction(z.enum(["save", "restore", "regular", "folder"]).parse(action)));
+  ipcMain.handle(IPC.contactsExport, async (e) => {
+    const { contacts } = getState();
+    if (!contacts.length) return { ok: false, error: "There are no contacts to export yet." };
+    const owner = sender(e);
+    const options = {
+      title: "Export contacts",
+      defaultPath: path.join(app.getPath("documents"), `QCF-Contacts-${new Date().toISOString().slice(0, 10)}.vcf`),
+      filters: [{ name: "Contact cards (vCard)", extensions: ["vcf"] }],
+    };
+    const picked = owner ? await dialog.showSaveDialog(owner, options) : await dialog.showSaveDialog(options);
+    if (picked.canceled || !picked.filePath) return { ok: false, canceled: true };
+    try {
+      await fs.writeFile(picked.filePath, contactsToVCard(contacts), "utf8");
+      return { ok: true, count: contacts.length, fileName: path.basename(picked.filePath) };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? `Could not save the file: ${err.message}` : "Could not save the file." };
+    }
+  });
   ipcMain.handle(IPC.stateGet, () => {
     const s = getState();
     return { settings: s.settings, contacts: s.contacts, photosBaseUrl: photosBaseUrl(), platform: process.platform, version: app.getVersion() };
