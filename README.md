@@ -10,6 +10,8 @@ Version 0.1.4-beta.4 adds **Settings → Contacts → Paste signature**. Copy on
 
 For a faster path, click **+** next to the widget's search box. Paste the signature and the details fill in right there; fix anything that looks off and click **Add contact**. Esc cancels. The quick sheet skips photos and call/text stars (defaults apply); use **Settings → Contacts** to change those afterward.
 
+**Export to Google, Outlook or a phone:** Settings → Contacts → **Export** saves every contact as a vCard (`.vcf`) file with name, title, company, email, Office/Cell numbers, website, LinkedIn, group and notes. In Google Contacts choose **Import** and pick the file; Outlook, iPhone and Mac Contacts open it too. It is a one-time copy, so export again after adding contacts (Google's **Merge & fix** cleans up any duplicates from re-importing).
+
 ## Talkdesk preview
 
 Version 0.1.4-beta.3 simplifies **Talkdesk** to **Copy for call** and **Copy for text**. Paste the starred number into Workspace Desktop. No browser page is opened and copying does not update contact history. Settings → General now includes **Save backup**, **Restore backup**, automatic checkpoints and **Copy setup from regular app** in previews. Backups preserve Microsoft app ID/tenant, Salesforce consumer key, contacts, preferences, images and Clients hide/not-client choices. Sign-ins and the updater token are not exported. Preview builds use a separate **QCF Contacts Preview** profile, leave the regular app's OS startup setting unchanged and are updated manually. Use the portable preview for testing; the installer still shares the regular app's identity. See [setup and testing](docs/TALKDESK-PILOT.md).

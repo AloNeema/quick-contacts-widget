@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ClipboardPaste, Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
+import { ClipboardPaste, Download, Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
 import type { Contact } from "@shared/types";
 import { filterContacts, normalizeOrder } from "@shared/merge";
 import { ContactDragHandle, useContactReorder } from "@renderer/hooks/useContactReorder";
@@ -23,6 +23,17 @@ export function ContactsEditor() {
   const [confirmDelete, setConfirmDelete] = useState<Contact | null>(null);
   const [pasting, setPasting] = useState(false);
   const [signature, setSignature] = useState<SignatureDraft | undefined>();
+  const [exporting, setExporting] = useState(false);
+  const exportAll = async () => {
+    setExporting(true);
+    try {
+      const r = await window.contacts.exportContacts();
+      if (r.ok) showToast(`Exported ${r.count} contact${r.count === 1 ? "" : "s"} to ${r.fileName}. In Google Contacts, choose Import and pick this file.`);
+      else if (!("canceled" in r)) showToast(r.error, "error");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const visible = useMemo(() => filterContacts(contacts, query), [contacts, query]);
   const reorder = useContactReorder(visible, "manual");
@@ -47,6 +58,9 @@ export function ContactsEditor() {
         </div>
         <Button variant="outline" onClick={() => setPasting(true)}>
           <ClipboardPaste /> Paste signature
+        </Button>
+        <Button variant="outline" disabled={!contacts.length || exporting} onClick={() => void exportAll()} title="Save all contacts as a vCard file for Google Contacts, Outlook or your phone">
+          <Download /> Export
         </Button>
         <Button onClick={() => { setSignature(undefined); setEditing("new"); }}>
           <Plus /> Add contact
