@@ -5,6 +5,8 @@ import { DOCK_STRIP_WIDTH, WIDGET_DEFAULT_SIZE, WIDGET_MIN_SIZE } from "@shared/
 import type { WindowBounds } from "@shared/types";
 import { getState, patchSettings } from "./store";
 import { windowIcon } from "./icons";
+import { releaseAppBar, reservedBand, syncAppBar } from "./appBar";
+import { xAgainstBand } from "@shared/appBar";
 
 let widgetWindow: BrowserWindow | null = null;
 let settingsWindow: BrowserWindow | null = null;
@@ -53,7 +55,11 @@ export function dockBounds(expanded: boolean): WindowBounds {
   const width = expanded
     ? Math.min(a.width, Math.max(WIDGET_MIN_SIZE.width, settings.dock.width ?? settings.bounds?.width ?? WIDGET_DEFAULT_SIZE.width))
     : DOCK_STRIP_WIDTH;
-  const x = settings.dock.side === "right" ? a.x + a.width - width : a.x;
+  // With the edge reserved, the work area already excludes the strip's band: sit against the band instead.
+  const band = reservedBand();
+  const x = band
+    ? xAgainstBand({ left: band.x, top: band.y, right: band.x + band.width, bottom: band.y + band.height }, settings.dock.side, width)
+    : settings.dock.side === "right" ? a.x + a.width - width : a.x;
   return { x, y, width, height };
 }
 
@@ -65,7 +71,13 @@ export function applyDockLayout(expanded = dockExpanded): void {
   if (settings.dock.enabled) {
     win.setBounds(dockBounds(expanded));
     win.setAlwaysOnTop(true, "normal");
+    // Reserve the edge (Windows); once Windows grants the band, move the strip against it.
+    const reposition = () => {
+      if (getWidgetWindow() === win && getState().settings.dock.enabled) win.setBounds(dockBounds(dockExpanded));
+    };
+    void syncAppBar(win, settings.dock, reposition).then((changed) => changed && reposition());
   } else {
+    releaseAppBar();
     win.setBounds(sanitizeBounds(settings.bounds));
     win.setAlwaysOnTop(settings.alwaysOnTop, "normal");
   }
@@ -152,6 +164,12 @@ export function createWidgetWindow(opts: { startHidden?: boolean } = {}): Browse
   win.once("ready-to-show", () => {
     if (!opts.startHidden) win.show();
   });
+  // A hidden strip gives its reserved edge back; showing it again reserves the edge anew.
+  win.on("show", () => {
+    if (getState().settings.dock.enabled) applyDockLayout(dockExpanded);
+  });
+  win.on("hide", () => releaseAppBar());
+  win.on("closed", () => releaseAppBar());
   load(win, "/widget");
   return win;
 }
@@ -160,6 +178,7 @@ export function recreateWidgetWindow(): void {
   const current = getWidgetWindow();
   const wasVisible = current?.isVisible() ?? true;
   if (current) {
+    releaseAppBar();
     (global as { __quitting?: boolean }).__quitting = true;
     current.close();
     (global as { __quitting?: boolean }).__quitting = false;

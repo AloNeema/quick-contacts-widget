@@ -20,6 +20,7 @@ import { IPC } from "@shared/ipc";
 import { applyPendingRestore, automaticBackup } from "./backup";
 import { setBackupError } from "./backupActions";
 import { startAutoSync, stopAutoSync } from "./autoSync";
+import { releaseAppBar } from "./appBar";
 
 // Preview builds have their own contacts/settings so testing a new provider cannot
 // make a stable build discard settings it does not yet understand.
@@ -91,6 +92,8 @@ if (!gotLock) {
   app.on("window-all-closed", () => undefined);
   app.on("before-quit", () => {
     stopAutoSync();
+    // Give the docked strip's reserved screen edge back before the window goes away.
+    releaseAppBar();
     (global as { __quitting?: boolean }).__quitting = true;
   });
   app.on("will-quit", () => { releaseHotkey(); });

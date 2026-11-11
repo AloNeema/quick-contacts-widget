@@ -15,6 +15,10 @@ extraResources:
       - tray.ico
       - icon.png
 asar: true
+# koffi's native binary (Windows screen-edge reservation) must load from outside the archive.
+asarUnpack:
+  - "node_modules/koffi/**"
+  - "node_modules/@koromix/**"
 # Ad-hoc signs the macOS app when no Developer ID is configured (see the script).
 afterPack: scripts/adhoc-sign-mac.cjs
 mac:
