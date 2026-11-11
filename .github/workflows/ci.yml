@@ -81,6 +81,8 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
       - name: Check dark and light appearance in Chromium
         run: npm run test:appearance
+      - name: Check docked strip reserves the screen edge (Windows app bar)
+        run: npm run test:appbar
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:

@@ -176,7 +176,7 @@ export function registerIpc(): void {
       }
     }
     if (patch.autoUpdate !== undefined) rescheduleUpdates();
-    if (patch.dock && (patch.dock.enabled !== prev.dock.enabled || patch.dock.side !== prev.dock.side)) applyDockLayout(false);
+    if (patch.dock && (patch.dock.enabled !== prev.dock.enabled || patch.dock.side !== prev.dock.side || patch.dock.reserveSpace !== prev.dock.reserveSpace)) applyDockLayout(false);
     if (patch.alwaysOnTop !== undefined && next.dock.enabled) getWidgetWindow()?.setAlwaysOnTop(true, "normal");
     if (patch.salesforce) { await sfRefreshStatus(); requestAutoSync(); }
     if (patch.companyLogos === true && !prev.companyLogos) refreshLogosSoon();

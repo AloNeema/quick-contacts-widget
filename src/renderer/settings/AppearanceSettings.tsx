@@ -11,6 +11,7 @@ const ACCENTS = [212, 262, 330, 160, 24, 45];
 export function AppearanceSettings() {
   const appearance = useContactsStore((s) => s.settings.appearance);
   const panelOpacity = Math.max(86, Math.round(appearance.opacity * 100));
+  const platform = useContactsStore((s) => s.platform);
   const dock = useContactsStore((s) => s.settings.dock);
   const companyLogos = useContactsStore((s) => s.settings.companyLogos);
   const showToast = useContactsStore((s) => s.showToast);
@@ -97,6 +98,11 @@ export function AppearanceSettings() {
           </div>
         </div>
       </Row>
+      {platform === "win32" ? (
+        <Row label="Keep other windows beside the dock" hint="While docked, the strip reserves its screen edge like the taskbar: maximized and snapped windows stop where the dock begins instead of going underneath it. The expanded panel still opens over your windows.">
+          <Switch checked={dock.reserveSpace !== false} disabled={!dock.enabled} onCheckedChange={(v) => void updateSettings({ dock: { ...dock, reserveSpace: v } })} />
+        </Row>
+      ) : null}
       <Row label="System blur" hint="Lets the OS blur the real desktop behind the panel (Windows 11 acrylic, macOS vibrancy). Turn off if the panel renders black on your graphics driver; the widget then uses its own glass effect.">
         <Switch checked={appearance.acrylic} onCheckedChange={(v) => set({ acrylic: v })} />
       </Row>

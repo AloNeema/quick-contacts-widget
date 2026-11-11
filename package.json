@@ -21,7 +21,8 @@
     "dist:win": "electron-vite build && electron-builder --win --config electron-builder.yml --publish never",
     "dist:mac": "electron-vite build && electron-builder --mac --config electron-builder.yml --publish never",
     "dist:dir": "electron-vite build && electron-builder --dir --config electron-builder.yml --publish never",
-    "test:appearance": "electron scripts/check-appearance.cjs"
+    "test:appearance": "electron scripts/check-appearance.cjs",
+    "test:appbar": "electron out/main/appBarCheck.js"
   },
   "dependencies": {
     "@azure/msal-node": "^2.16.3",
@@ -37,6 +38,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "electron-updater": "^6.8.9",
+    "koffi": "^3.3.7",
     "lucide-react": "^0.462.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

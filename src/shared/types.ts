@@ -182,6 +182,8 @@ export interface DockSettings {
   height?: number;
   /** Width of the expanded panel while docked; unset = the floating width. */
   width?: number;
+  /** Windows: reserve the strip's edge like the taskbar so other windows stop at it. Unset = on. */
+  reserveSpace?: boolean;
 }
 
 export type ContactSort = "manual" | "name" | "recent" | "frequent";

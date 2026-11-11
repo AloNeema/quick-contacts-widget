@@ -6,7 +6,12 @@ export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
     resolve: { alias: { "@shared": resolve(__dirname, "src/shared") } },
-    build: { lib: { entry: resolve(__dirname, "src/main/index.ts") } },
+    build: {
+      lib: {
+        // appBarCheck: a CI-only entry that exercises the real Windows screen-edge reservation.
+        entry: { index: resolve(__dirname, "src/main/index.ts"), appBarCheck: resolve(__dirname, "src/main/appBarCheck.ts") },
+      },
+    },
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
