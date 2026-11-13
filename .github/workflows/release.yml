@@ -1,7 +1,7 @@
 name: Release
 
-# Manual: builds the Windows installer + portable exe and uploads them with
-# latest.yml to a DRAFT GitHub release tagged v<package version>. Publish the
+# Manual: creates one draft release, then builds the Windows installer + portable exe (with
+# latest.yml) and the macOS builds (with latest-mac.yml) into it, tagged v<package version>. Publish the
 # draft to make installed widgets pick it up.
 on:
   workflow_dispatch:
@@ -10,7 +10,29 @@ permissions:
   contents: write
 
 jobs:
+  # Create the draft once, before either build uploads. Without this the Windows and macOS jobs
+  # can both find no draft at the same moment and each create their own, splitting the assets.
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Create the draft release if it doesn't exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="v$(node -p "require('./package.json').version")"
+          drafts=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --jq "[.[] | select(.tag_name == \"$tag\")] | length")
+          if [ "$drafts" -gt 1 ]; then
+            echo "::error::There are $drafts releases tagged $tag. Delete the extra drafts, then run this again."
+            exit 1
+          fi
+          if [ "$drafts" -eq 0 ]; then
+            gh release create "$tag" --draft --target "${{ github.sha }}" --title "${tag#v}" --notes ""
+          fi
+
   release-mac:
+    needs: draft
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -30,6 +52,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
   release:
+    needs: draft
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
