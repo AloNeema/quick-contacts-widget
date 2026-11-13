@@ -24,5 +24,6 @@ describe("Graph-to-Classic-Outlook message IDs", () => {
     });
     expect(result.error).toBeUndefined();
     expect(result.status, result.stdout + result.stderr).toBe(0);
-  });
+    // A cold Windows PowerShell start on a CI runner can take over vitest's 5 s default; allow the spawn's own 15 s.
+  }, 20000);
 });
