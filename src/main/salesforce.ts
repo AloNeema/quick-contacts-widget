@@ -183,8 +183,33 @@ async function refreshAccessToken(): Promise<Tokens | null> {
   }
 }
 
+/** Any REST call under /services/data/<version>, with one automatic token refresh on 401. */
+export async function sfRequest<T>(pathAndQuery: string, init: RequestInit = {}, retried = false): Promise<T> {
+  const t = await loadTokens();
+  if (!t) throw new Error("Not signed in to Salesforce");
+  const res = await fetch(`${t.instanceUrl}/services/data/${API}${pathAndQuery}`, {
+    ...init,
+    signal: AbortSignal.timeout(30_000),
+    headers: { Authorization: `Bearer ${t.accessToken}`, ...(init.body ? { "Content-Type": "application/json" } : {}), ...(init.headers ?? {}) },
+  });
+  if (res.status === 401 && !retried) {
+    const nt = await refreshAccessToken();
+    if (nt) return sfRequest<T>(pathAndQuery, init, true);
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => [])) as { message?: string }[] | { message?: string };
+    const message = Array.isArray(body) ? body[0]?.message : body?.message;
+    throw new Error(message ?? `Salesforce ${res.status}`);
+  }
+  return (res.status === 204 ? undefined : await res.json()) as T;
+}
+
+export function salesforceInstanceUrl(): string | undefined {
+  return tokens?.instanceUrl;
+}
+
 /** SOQL query with one automatic token refresh on 401. */
-async function soql<T>(query: string, retried = false): Promise<T[]> {
+export async function soql<T>(query: string, retried = false): Promise<T[]> {
   const t = await loadTokens();
   if (!t) throw new Error("Not signed in to Salesforce");
   const res = await fetch(`${t.instanceUrl}/services/data/${API}/query?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(30_000), headers: { Authorization: `Bearer ${t.accessToken}` } });

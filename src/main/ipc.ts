@@ -30,6 +30,7 @@ import { checkForUpdates, getUpdateStatus, installUpdate, rescheduleUpdates, set
 import { refreshLogos } from "./logos";
 import { addClientContact, openClientEmail, previewClientEmail, contactsChangedForClients, getClientsState, markClient, markClients, markClientsViewed, rescheduleClients, restoreHiddenClients, scanClients } from "./clients";
 import { sfDeals, sfRefreshStatus, sfSignIn, sfSignOut, sfSync } from "./salesforce";
+import { getTodosState, refreshTodos, replyToTodo, salesforceChangedForTodos, setTodoDone } from "./chatter";
 
 const incomingSchema = z.object({
   name: z.string().min(1),
@@ -259,9 +260,25 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.sfSignIn, async () => {
     const r = await sfSignIn();
     if (r.signedIn) { void scanClients(); requestAutoSync(); }
+    salesforceChangedForTodos();
     return r;
   });
-  ipcMain.handle(IPC.sfSignOut, () => sfSignOut());
+  ipcMain.handle(IPC.sfSignOut, async () => {
+    const r = await sfSignOut();
+    salesforceChangedForTodos();
+    return r;
+  });
+  ipcMain.handle(IPC.todosGet, () => getTodosState());
+  ipcMain.handle(IPC.todosRefresh, () => refreshTodos());
+  ipcMain.handle(IPC.todosSetDone, (_e, id: unknown, done: unknown) => setTodoDone(z.string().min(1).max(64).parse(id), z.boolean().parse(done)));
+  ipcMain.handle(IPC.todosReply, async (_e, id: unknown, text: unknown) => {
+    try {
+      await replyToTodo(z.string().min(1).max(64).parse(id), z.string().trim().min(1).max(5000).parse(text));
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : "Could not post the reply." };
+    }
+  });
   ipcMain.handle(IPC.sfSync, async () => {
     const r = await sfSync();
     notify();

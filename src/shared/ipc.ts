@@ -1,4 +1,4 @@
-import type { ClientEmailPreview, ClientsState, Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, UpdateStatus } from "./types";
+import type { ClientEmailPreview, ClientsState, Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, TodosState, UpdateStatus } from "./types";
 
 export const IPC = {
   backupStatus: "backup:status",
@@ -46,6 +46,11 @@ export const IPC = {
   clientsRestoreHidden: "clients:restore-hidden",
   clientsViewed: "clients:viewed",
   clientsChanged: "clients:changed",
+  todosGet: "todos:get",
+  todosRefresh: "todos:refresh",
+  todosSetDone: "todos:set-done",
+  todosReply: "todos:reply",
+  todosChanged: "todos:changed",
   widgetShowTab: "widget:show-tab",
   sfStatus: "sf:status",
   sfSignIn: "sf:sign-in",
@@ -124,7 +129,13 @@ export interface ContactsApi {
   /** The Clients tab was opened: clears the "new" badge. */
   markClientsViewed(): Promise<ClientsState>;
   onClientsChanged(cb: (state: ClientsState) => void): () => void;
-  onShowTab(cb: (tab: "contacts" | "clients") => void): () => void;
+  /** To-do tab: Chatter @mentions of you. */
+  getTodos(): Promise<TodosState>;
+  refreshTodos(): Promise<TodosState>;
+  setTodoDone(id: string, done: boolean): Promise<{ state: TodosState; warning?: string }>;
+  replyToTodo(id: string, text: string): Promise<{ ok: true } | { ok: false; error: string }>;
+  onTodosChanged(cb: (state: TodosState) => void): () => void;
+  onShowTab(cb: (tab: "contacts" | "clients" | "todos") => void): () => void;
   sfStatus(): Promise<SalesforceStatus>;
   sfSignIn(): Promise<SalesforceStatus>;
   sfSignOut(): Promise<SalesforceStatus>;

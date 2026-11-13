@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { DEFAULT_SETTINGS } from "@shared/defaults";
-import type { ClientsState, Contact, M365Status, PresenceMap, SalesforceStatus, Settings, UpdateStatus } from "@shared/types";
+import type { ClientsState, Contact, M365Status, PresenceMap, SalesforceStatus, Settings, TodosState, UpdateStatus } from "@shared/types";
 
 interface ContactsState {
   ready: boolean;
@@ -14,6 +14,7 @@ interface ContactsState {
   update: UpdateStatus;
   sf: SalesforceStatus;
   clients: ClientsState;
+  todos: TodosState;
   toast: { id: number; message: string; tone: "info" | "error" } | null;
   hydrate: () => Promise<void>;
   setContacts: (contacts: Contact[]) => void;
@@ -28,6 +29,7 @@ let unsubscribeM365: (() => void) | null = null;
 let unsubscribeUpdate: (() => void) | null = null;
 let unsubscribeSf: (() => void) | null = null;
 let unsubscribeClients: (() => void) | null = null;
+let unsubscribeTodos: (() => void) | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useContactsStore = create<ContactsState>((set, get) => ({
@@ -42,6 +44,7 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
   update: { state: "idle", currentVersion: "", hasToken: false },
   sf: { configured: false, signedIn: false },
   clients: { items: [], newCount: 0, hiddenCount: 0, scanning: false },
+  todos: { items: [], openCount: 0, signedIn: false, fetching: false },
   toast: null,
   hydrate: async () => {
     const state = await window.contacts.getState();
@@ -63,6 +66,9 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
     unsubscribeClients?.();
     unsubscribeClients = window.contacts.onClientsChanged((clients) => set({ clients }));
     void window.contacts.getClients().then((clients) => set({ clients }));
+    unsubscribeTodos?.();
+    unsubscribeTodos = window.contacts.onTodosChanged((todos) => set({ todos }));
+    void window.contacts.getTodos().then((todos) => set({ todos }));
   },
   setContacts: (contacts) => set({ contacts }),
   setSettings: (settings) => set({ settings }),

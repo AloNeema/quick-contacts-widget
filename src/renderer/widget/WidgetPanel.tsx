@@ -1,8 +1,9 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, MoreHorizontal, Plus, PanelLeftClose, PanelRightClose, Pin, PinOff, Reply, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
+import { AtSign, ChevronRight, MoreHorizontal, Plus, PanelLeftClose, PanelRightClose, Pin, PinOff, Reply, Search, Settings2, Upload, UserPlus, X } from "lucide-react";
 import { ClientsList, type ClientFilter } from "./ClientsList";
 import { SortMenu } from "./SortMenu";
 import { QuickAdd } from "./QuickAdd";
+import { TodoList } from "./TodoList";
 import { filterContacts, groupsOf, recentContacts } from "@shared/merge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@renderer/components/ui/tooltip";
 import { cn } from "@renderer/lib/utils";
@@ -46,11 +47,12 @@ export function WidgetPanel() {
   const dock = settings.dock;
   const [dockExpanded, setDockExpanded] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"contacts" | "clients">("contacts");
+  const [tab, setTab] = useState<"contacts" | "clients" | "todos">("contacts");
   const [clientFilter, setClientFilter] = useState<ClientFilter>("all");
   const clients = useContactsStore((s) => s.clients);
   const m365SignedIn = useContactsStore((s) => s.m365.signedIn);
   const waitingCount = clients.items.filter((i) => i.waitingOnYou).length;
+  const todoCount = useContactsStore((s) => s.todos.openCount);
   useEffect(() => window.contacts.onShowTab((t) => {
     setTab(t);
     if (dock.enabled) {
@@ -189,6 +191,22 @@ export function WidgetPanel() {
                 </span>
               ) : null}
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "todos"}
+              aria-label={todoCount ? `To-do, ${todoCount} open Chatter mentions` : "To-do"}
+              title="To-do: Chatter posts that @mention you"
+              onClick={() => setTab("todos")}
+              className={cn("no-drag title-display flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-1.5 text-[14px] transition-colors", tab === "todos" ? "text-foreground/95" : "text-muted-foreground hover:text-foreground")}
+            >
+              {narrow ? <AtSign className="h-4 w-4" aria-hidden /> : "To-do"}
+              {todoCount > 0 ? (
+                <span className="due-badge min-w-[18px] rounded-full px-1.5 text-center text-[11px] font-semibold leading-[18px] text-white" aria-hidden>
+                  {todoCount > 99 ? "99+" : todoCount}
+                </span>
+              ) : null}
+            </button>
           </div>
           {narrow ? (
             <div ref={moreRef} className="relative">
@@ -224,7 +242,9 @@ export function WidgetPanel() {
           </HeaderButton>
         </header>
 
-        {tab === "clients" ? (
+        {tab === "todos" ? (
+          <TodoList compact={compact} />
+        ) : tab === "clients" ? (
           <ClientsList photosBaseUrl={photosBaseUrl} compact={compact} filter={clientFilter} onFilterChange={setClientFilter} />
         ) : (
         <>

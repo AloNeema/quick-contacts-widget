@@ -46,6 +46,15 @@ const api: ContactsApi = {
   addClientContact: (email) => ipcRenderer.invoke(IPC.clientsAddContact, email),
   restoreHiddenClients: () => ipcRenderer.invoke(IPC.clientsRestoreHidden),
   markClientsViewed: () => ipcRenderer.invoke(IPC.clientsViewed),
+  getTodos: () => ipcRenderer.invoke(IPC.todosGet),
+  refreshTodos: () => ipcRenderer.invoke(IPC.todosRefresh),
+  setTodoDone: (id, done) => ipcRenderer.invoke(IPC.todosSetDone, id, done),
+  replyToTodo: (id, text) => ipcRenderer.invoke(IPC.todosReply, id, text),
+  onTodosChanged: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
+    ipcRenderer.on(IPC.todosChanged, listener);
+    return () => ipcRenderer.removeListener(IPC.todosChanged, listener);
+  },
   onClientsChanged: (cb) => {
     const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
     ipcRenderer.on(IPC.clientsChanged, listener);
