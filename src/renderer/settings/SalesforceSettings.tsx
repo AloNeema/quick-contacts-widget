@@ -110,7 +110,16 @@ export function SalesforceSettings() {
           </div>
           <Switch checked={sf.showDeals} onCheckedChange={(v) => void updateSettings({ salesforce: { ...sf, showDeals: v } })} />
         </div>
-        <p className="text-xs text-muted-foreground">Tokens are stored encrypted on this PC. The widget only reads; it never writes to Salesforce.</p>
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <Label className="text-sm">Like the post when I check off a to-do</Label>
+            <p className="mt-1 text-xs text-muted-foreground">The To-do tab lists Chatter posts and replies that @mention you. With this on, checking one off also likes it in Chatter, so the person who tagged you sees it was handled.</p>
+          </div>
+          <Switch checked={sf.likeOnDone === true} onCheckedChange={(v) => void updateSettings({ salesforce: { ...sf, likeOnDone: v } })} />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Tokens are stored encrypted on this PC. The widget only writes to Salesforce when you ask it to: a Chatter reply you send from the To-do tab, or a like if the setting above is on. It never changes records.
+        </p>
       </section>
     </div>
   );

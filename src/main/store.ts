@@ -83,7 +83,7 @@ export const settingsSchema = z.object({
   hotkey: z.string().max(80).default(DEFAULT_SETTINGS.hotkey),
   autoUpdate: z.boolean().default(true),
   salesforce: z
-    .object({ consumerKey: z.string().max(300), loginUrl: z.string().url().max(300), showDeals: z.boolean() })
+    .object({ consumerKey: z.string().max(300), loginUrl: z.string().url().max(300), showDeals: z.boolean(), likeOnDone: z.boolean().optional() })
     .default(DEFAULT_SETTINGS.salesforce),
   dock: z
     .object({ enabled: z.boolean(), side: z.enum(["left", "right"]), y: z.number().optional(), height: z.number().optional(), width: z.number().optional(), reserveSpace: z.boolean().optional() })

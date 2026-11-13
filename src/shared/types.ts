@@ -1,3 +1,4 @@
+import type { ChatterTodo } from "./chatterTodo";
 /** Shared data model for the QCF Contacts widget (main, preload and renderer). */
 
 export type DialAction = "call" | "sms";
@@ -121,6 +122,8 @@ export interface SalesforceSettings {
   loginUrl: string;
   /** Show the top open deal under the name. */
   showDeals: boolean;
+  /** To-do tab: like the Chatter post when you check it off, so the person who tagged you sees it. */
+  likeOnDone?: boolean;
 }
 
 export interface SalesforceStatus {
@@ -365,4 +368,20 @@ export interface MergeSummary {
   updated: number;
   skipped: number;
   removed: number;
+}
+
+/** A Chatter @mention on the To-do tab, with whether you've checked it off. */
+export interface TodoItem extends ChatterTodo {
+  doneAt?: string;
+  authorEmail?: string;
+  authorPhone?: string;
+}
+
+export interface TodosState {
+  items: TodoItem[];
+  openCount: number;
+  signedIn: boolean;
+  fetching: boolean;
+  lastFetchAt?: string;
+  error?: string;
 }
