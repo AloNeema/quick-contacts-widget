@@ -52,7 +52,7 @@ export function mergeContacts(
   incoming: IncomingContact[],
   options: MergeOptions = { removeMissing: false },
   now = new Date().toISOString(),
-): { contacts: Contact[]; summary: MergeSummary } {
+): { contacts: Contact[]; summary: MergeSummary; touchedIds: Set<string> } {
   const summary: MergeSummary = { added: 0, updated: 0, skipped: 0, removed: 0 };
   const byEmail = new Map<string, Contact>();
   const byPhone = new Map<string, Contact | null>();
@@ -136,7 +136,7 @@ export function mergeContacts(
     contacts = result.filter((c) => touched.has(c.id));
     summary.removed = result.length - contacts.length;
   }
-  return { contacts: normalizeOrder(contacts), summary };
+  return { contacts: normalizeOrder(contacts), summary, touchedIds: touched };
 }
 
 /** Pinned first, then by order; re-number order 0..n-1. */

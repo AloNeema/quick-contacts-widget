@@ -24,11 +24,12 @@ export function ContactsEditor() {
   const [pasting, setPasting] = useState(false);
   const [signature, setSignature] = useState<SignatureDraft | undefined>();
   const [exporting, setExporting] = useState(false);
-  const exportAll = async () => {
+  const exportAll = async (format: "vcard" | "xlsx") => {
     setExporting(true);
     try {
-      const r = await window.contacts.exportContacts();
-      if (r.ok) showToast(`Exported ${r.count} contact${r.count === 1 ? "" : "s"} to ${r.fileName}. In Google Contacts, choose Import and pick this file.`);
+      const r = await window.contacts.exportContacts(format);
+      if (r.ok && format === "xlsx") showToast(`Exported ${r.count} contact${r.count === 1 ? "" : "s"} to ${r.fileName}. Share it from OneDrive to use it as the team list.`);
+      else if (r.ok) showToast(`Exported ${r.count} contact${r.count === 1 ? "" : "s"} to ${r.fileName}. In Google Contacts, choose Import and pick this file.`);
       else if (!("canceled" in r)) showToast(r.error, "error");
     } finally {
       setExporting(false);
@@ -59,8 +60,11 @@ export function ContactsEditor() {
         <Button variant="outline" onClick={() => setPasting(true)}>
           <ClipboardPaste /> Paste signature
         </Button>
-        <Button variant="outline" disabled={!contacts.length || exporting} onClick={() => void exportAll()} title="Save all contacts as a vCard file for Google Contacts, Outlook or your phone">
+        <Button variant="outline" disabled={!contacts.length || exporting} onClick={() => void exportAll("vcard")} title="Save all contacts as a vCard file for Google Contacts, Outlook or your phone">
           <Download /> Export
+        </Button>
+        <Button variant="outline" disabled={!contacts.length || exporting} onClick={() => void exportAll("xlsx")} title="Save all contacts as an Excel file, for example to share as the team list">
+          <Download /> Excel
         </Button>
         <Button onClick={() => { setSignature(undefined); setEditing("new"); }}>
           <Plus /> Add contact

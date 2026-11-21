@@ -5,6 +5,7 @@ import { Input } from "@renderer/components/ui/input";
 import { Label } from "@renderer/components/ui/label";
 import { Switch } from "@renderer/components/ui/switch";
 import { useContactsStore } from "@renderer/store/useContacts";
+import { TeamListSettings } from "./TeamListSettings";
 
 export function M365Settings() {
   const m365 = useContactsStore((s) => s.settings.m365);
@@ -72,7 +73,7 @@ export function M365Settings() {
           One-time setup in the Azure portal: <b>Microsoft Entra ID › App registrations › New registration</b>. Name it "QCF Contacts", choose
           <i> Accounts in this organizational directory only</i>, and under <b>Authentication › Add a platform › Mobile and desktop applications</b>
           tick <code>http://localhost</code>. Enable <i>Allow public client flows</i>. Then paste the <b>Application (client) ID</b> here. Permissions
-          (User.Read, User.ReadBasic.All, Contacts.Read, People.Read, Presence.Read.All, Mail.Read, Calendars.Read) are requested at sign-in; none need admin consent.
+          (User.Read, User.ReadBasic.All, Contacts.Read, People.Read, Presence.Read.All, Mail.Read, Calendars.Read, plus Files.Read.All once a team list link is saved) are requested at sign-in; none need admin consent unless your company requires it for all apps.
         </p>
         <div className="grid gap-3 md:grid-cols-[1fr_220px]">
           <div>
@@ -113,6 +114,8 @@ export function M365Settings() {
           </div>
         </div>
       </section>
+
+      <TeamListSettings />
 
       <section className="space-y-4 rounded-xl border p-4">
         <Toggle label="Show Teams presence" hint="Green / red / amber dot on people in your organization, refreshed every 45 seconds while signed in." checked={m365.presence} onChange={(v) => void updateSettings({ m365: { ...m365, presence: v } })} />

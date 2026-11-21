@@ -2,6 +2,7 @@ import { powerMonitor } from "electron";
 import { createAutoSyncScheduler } from "@shared/autoSync";
 import { IPC } from "@shared/ipc";
 import { refreshStatus, syncContacts } from "./m365";
+import { syncTeamList } from "./teamList";
 import { sfRefreshStatus, sfSync } from "./salesforce";
 import { getState } from "./store";
 import { broadcast } from "./windows";
@@ -17,6 +18,13 @@ function publishContacts() {
 }
 
 const scheduler = createAutoSyncScheduler([
+  // Team list first, so people it adds get Microsoft and Salesforce details in the same pass.
+  async () => {
+    if (!getState().settings.m365.teamListUrl) return;
+    const status = await refreshStatus();
+    if (!status.configured || !status.signedIn) return;
+    if ((await syncTeamList()).changed) publishContacts();
+  },
   async () => {
     const status = await refreshStatus();
     if (!status.configured || !status.signedIn) return;
