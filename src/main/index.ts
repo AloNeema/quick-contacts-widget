@@ -10,6 +10,7 @@ import { registerIpc } from "./ipc";
 import { applyLaunchAtLogin } from "./autoLaunch";
 import { applyHotkey, releaseHotkey } from "./hotkey";
 import { initM365 } from "./m365";
+import { initTeamList } from "./teamList";
 import { initUpdater } from "./updater";
 import { initSalesforce } from "./salesforce";
 import { refreshLogos } from "./logos";
@@ -80,6 +81,7 @@ if (!gotLock) {
       onPresence: (p) => broadcast(IPC.presenceChanged, p),
     });
 
+    initTeamList((s) => broadcast(IPC.teamStatusChanged, s));
     startAutoSync();
 
     app.on("activate", () => {

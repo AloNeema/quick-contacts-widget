@@ -1,4 +1,4 @@
-import type { ClientEmailPreview, ClientsState, Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, TodosState, UpdateStatus } from "./types";
+import type { ClientEmailPreview, ClientsState, Contact, ContactContext, DialAction, ImportFile, IncomingContact, M365Status, M365SyncSummary, MergeOptions, MergeSummary, PresenceMap, SalesforceDeals, SalesforceStatus, SalesforceSyncSummary, Settings, TeamListStatus, TodosState, UpdateStatus } from "./types";
 
 export const IPC = {
   backupStatus: "backup:status",
@@ -28,6 +28,9 @@ export const IPC = {
   m365SignIn: "m365:sign-in",
   m365SignOut: "m365:sign-out",
   m365Sync: "m365:sync",
+  teamStatus: "team:status",
+  teamSync: "team:sync",
+  teamStatusChanged: "team:status-changed",
   presenceGet: "presence:get",
   updateStatus: "update:status",
   updateCheck: "update:check",
@@ -78,7 +81,7 @@ export interface ContactsApi {
   backupStatus(): Promise<{ preview: boolean; error?: string }>;
   backupAction(action: "save" | "restore" | "regular" | "folder"): Promise<{ message?: string }>;
   /** Save every contact as a vCard (.vcf) file for Google Contacts, Outlook or a phone. */
-  exportContacts(): Promise<{ ok: true; count: number; fileName: string } | { ok: false; canceled: true } | { ok: false; error: string }>;
+  exportContacts(format?: "vcard" | "xlsx"): Promise<{ ok: true; count: number; fileName: string } | { ok: false; canceled: true } | { ok: false; error: string }>;
   getState(): Promise<{ settings: Settings; contacts: Contact[]; photosBaseUrl: string; platform: string; version: string }>;
   saveContacts(contacts: Contact[]): Promise<Contact[]>;
   reorderContact(id: string, targetId: string, side: "before" | "after", sort: Settings["sort"]): Promise<{ contacts: Contact[]; settings: Settings }>;
@@ -103,6 +106,9 @@ export interface ContactsApi {
   m365SignIn(): Promise<M365Status>;
   m365SignOut(): Promise<M365Status>;
   m365Sync(): Promise<{ summary: M365SyncSummary; status: M365Status }>;
+  teamStatus(): Promise<TeamListStatus>;
+  teamSync(): Promise<TeamListStatus>;
+  onTeamStatusChanged(cb: (s: TeamListStatus) => void): () => void;
   getPresence(): Promise<PresenceMap>;
   updateStatus(): Promise<UpdateStatus>;
   checkForUpdates(): Promise<UpdateStatus>;

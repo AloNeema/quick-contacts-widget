@@ -51,6 +51,11 @@ export interface Contact {
     syncedAt: string;
     topDeal?: { id: string; name: string; stage: string; amount?: number; closeDate?: string };
   };
+  /**
+   * Set by the team list sync: "added" when the team list created this contact (removed again if it
+   * leaves the list), "matched" when it was already in this person's own contacts (kept, just unmarked).
+   */
+  team?: "added" | "matched";
   /** Deterministic hue (0-359) used for the initials avatar. */
   hue: number;
   pinned: boolean;
@@ -92,6 +97,21 @@ export interface M365Settings {
   presence: boolean;
   /** Also sync Outlook personal contacts (/me/contacts). */
   includeOutlookContacts: boolean;
+  /** OneDrive / SharePoint share link to the team's Excel contact list, read through this sign-in. */
+  teamListUrl?: string;
+}
+
+export interface TeamListStatus {
+  /** A link is saved in settings. */
+  configured: boolean;
+  syncing: boolean;
+  lastSyncAt?: string;
+  fileName?: string;
+  /** Contacts the list holds now. */
+  count?: number;
+  /** The sign-in hasn't been allowed to read shared files yet. */
+  needsPermission?: boolean;
+  error?: string;
 }
 
 export interface M365Status {

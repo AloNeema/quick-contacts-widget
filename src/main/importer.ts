@@ -20,7 +20,11 @@ export async function pickImportFile(parent: BrowserWindow | null): Promise<Impo
 }
 
 export async function readSpreadsheet(filePath: string): Promise<ImportFile> {
-  const buffer = await fs.readFile(filePath);
+  return parseWorkbook(await fs.readFile(filePath), path.basename(filePath));
+}
+
+/** Every non-empty sheet as rows of trimmed text, capped at MAX_ROWS. */
+export function parseWorkbook(buffer: Buffer, fileName: string): ImportFile {
   const workbook = XLSX.read(buffer, { type: "buffer", cellDates: false, dense: false });
   const sheets = workbook.SheetNames.map((name) => {
     const sheet = workbook.Sheets[name];
@@ -28,5 +32,5 @@ export async function readSpreadsheet(filePath: string): Promise<ImportFile> {
     const rows = grid.slice(0, MAX_ROWS).map((row) => row.map((v) => (v == null ? "" : String(v).trim())));
     return { name, rows };
   }).filter((s) => s.rows.length > 0);
-  return { fileName: path.basename(filePath), sheets };
+  return { fileName, sheets };
 }

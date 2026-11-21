@@ -13,6 +13,9 @@ import type { Contact, IncomingContact, MergeOptions, Settings } from "@shared/t
 import { contactSchema, getState, patchSettings, setContacts, settingsPatchSchema } from "./store";
 import { deletePhoto, deletePhotoForContact, photosBaseUrl, pickPhoto, setPhotoFromPath, setPhotoFromUrl } from "./photos";
 import { pickImportFile } from "./importer";
+import * as XLSX from "xlsx";
+import { contactsToSheetRows } from "@shared/teamList";
+import { getTeamListStatus, syncTeamList, teamListUrlChanged } from "./teamList";
 import { applyLaunchAtLogin } from "./autoLaunch";
 import {
   applyDockLayout,
@@ -84,19 +87,27 @@ async function openExternalSafe(uri: string): Promise<Result> {
 export function registerIpc(): void {
   ipcMain.handle(IPC.backupStatus, () => backupStatus());
   ipcMain.handle(IPC.backupAction, (_e, action: unknown) => backupAction(z.enum(["save", "restore", "regular", "folder"]).parse(action)));
-  ipcMain.handle(IPC.contactsExport, async (e) => {
+  ipcMain.handle(IPC.contactsExport, async (e, rawFormat: unknown) => {
+    const format = z.enum(["vcard", "xlsx"]).catch("vcard").parse(rawFormat);
     const { contacts } = getState();
     if (!contacts.length) return { ok: false, error: "There are no contacts to export yet." };
     const owner = sender(e);
+    const ext = format === "xlsx" ? "xlsx" : "vcf";
     const options = {
-      title: "Export contacts",
-      defaultPath: path.join(app.getPath("documents"), `QCF-Contacts-${new Date().toISOString().slice(0, 10)}.vcf`),
-      filters: [{ name: "Contact cards (vCard)", extensions: ["vcf"] }],
+      title: format === "xlsx" ? "Export contacts to Excel" : "Export contacts",
+      defaultPath: path.join(app.getPath("documents"), `QCF-Contacts-${new Date().toISOString().slice(0, 10)}.${ext}`),
+      filters: [format === "xlsx" ? { name: "Excel workbook", extensions: ["xlsx"] } : { name: "Contact cards (vCard)", extensions: ["vcf"] }],
     };
     const picked = owner ? await dialog.showSaveDialog(owner, options) : await dialog.showSaveDialog(options);
     if (picked.canceled || !picked.filePath) return { ok: false, canceled: true };
     try {
-      await fs.writeFile(picked.filePath, contactsToVCard(contacts), "utf8");
+      if (format === "xlsx") {
+        const book = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(contactsToSheetRows(contacts)), "Contacts");
+        await fs.writeFile(picked.filePath, XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer);
+      } else {
+        await fs.writeFile(picked.filePath, contactsToVCard(contacts), "utf8");
+      }
       return { ok: true, count: contacts.length, fileName: path.basename(picked.filePath) };
     } catch (err) {
       return { ok: false, error: err instanceof Error ? `Could not save the file: ${err.message}` : "Could not save the file." };
@@ -140,7 +151,7 @@ export function registerIpc(): void {
     // pin/order, usage) come from the stored contact so a sync or call made meanwhile isn't undone.
     const stored = idx === -1 ? undefined : list[idx];
     const contact: Contact = stored
-      ? { ...parsed, m365: stored.m365, sf: stored.sf, logo: stored.logo, photo: stored.photo, pinned: stored.pinned, order: stored.order, lastContactedAt: stored.lastContactedAt, contactCount: stored.contactCount }
+      ? { ...parsed, team: stored.team, m365: stored.m365, sf: stored.sf, logo: stored.logo, photo: stored.photo, pinned: stored.pinned, order: stored.order, lastContactedAt: stored.lastContactedAt, contactCount: stored.contactCount }
       : parsed;
     const next = idx === -1 ? [...list, contact] : list.map((c) => (c.id === contact.id ? contact : c));
     const saved = await setContacts(next);
@@ -183,6 +194,15 @@ export function registerIpc(): void {
     if (patch.companyLogos === true && !prev.companyLogos) refreshLogosSoon();
     if (patch.clients) rescheduleClients();
     if (patch.m365) {
+      if ((patch.m365.teamListUrl ?? "") !== (prev.m365.teamListUrl ?? "")) {
+        teamListUrlChanged();
+        // Without a team list, contacts it brought in become this person's own and are never removed automatically.
+        if (!next.m365.teamListUrl) await setContacts(getState().contacts.map((c) => {
+          const own = { ...c };
+          delete own.team;
+          return own;
+        }));
+      }
       await refreshStatus();
       schedulePresence();
       requestAutoSync();
@@ -347,6 +367,16 @@ export function registerIpc(): void {
     const r = await syncContacts();
     notify();
     return r;
+  });
+  ipcMain.handle(IPC.teamStatus, () => getTeamListStatus());
+  ipcMain.handle(IPC.teamSync, async () => {
+    const r = await syncTeamList();
+    if (r.changed) {
+      notify();
+      refreshLogosSoon();
+      requestAutoSync();
+    }
+    return r.status;
   });
   ipcMain.handle(IPC.presenceGet, () => getPresence());
   ipcMain.handle(IPC.updateStatus, () => getUpdateStatus());

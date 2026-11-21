@@ -101,12 +101,20 @@ export async function refreshStatus(): Promise<M365Status> {
   return next;
 }
 
+/** Reading the team list's file (shared from someone else's OneDrive) needs Files.Read.All. */
+const TEAM_FILE_SCOPES = ["Files.Read.All"];
+
+/** Sign-in scopes: the team-file permission is only asked for once a team list link is saved. */
+function signInScopes(): string[] {
+  return getState().settings.m365.teamListUrl ? [...M365_SCOPES, ...TEAM_FILE_SCOPES] : M365_SCOPES;
+}
+
 export async function signIn(): Promise<M365Status> {
   const c = client();
   if (!c) return setStatus({ configured: false, signedIn: false, lastError: "Enter the Azure app client id first." });
   try {
     const result = await c.acquireTokenInteractive({
-      scopes: M365_SCOPES,
+      scopes: signInScopes(),
       openBrowser: async (url) => {
         await shell.openExternal(url);
       },
@@ -150,6 +158,23 @@ async function token(): Promise<string | null> {
     if (err instanceof InteractionRequiredAuthError) setStatus({ signedIn: false, lastError: "Session expired, please sign in again." });
     else setStatus({ lastError: "Couldn't reach Microsoft 365 just now. Will retry." });
     return null;
+  }
+}
+
+/**
+ * A token that can read files shared with this person, without disturbing the rest of the sign-in:
+ * when the permission hasn't been granted yet the result says so and other features carry on.
+ */
+export async function teamFilesToken(): Promise<{ token: string } | { needsPermission: true } | { error: string }> {
+  const c = client();
+  const account = await firstAccount();
+  if (!c || !account) return { error: "Sign in to Microsoft 365 first." };
+  try {
+    const r = await c.acquireTokenSilent({ account, scopes: TEAM_FILE_SCOPES });
+    return { token: r.accessToken };
+  } catch (err) {
+    if (err instanceof InteractionRequiredAuthError) return { needsPermission: true };
+    return { error: "Couldn't reach Microsoft 365 just now. Will retry." };
   }
 }
 

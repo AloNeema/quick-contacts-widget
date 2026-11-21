@@ -4,7 +4,7 @@ import { IPC, type ContactsApi } from "../shared/ipc";
 const api: ContactsApi = {
   backupStatus: () => ipcRenderer.invoke(IPC.backupStatus),
   backupAction: (action) => ipcRenderer.invoke(IPC.backupAction, action),
-  exportContacts: () => ipcRenderer.invoke(IPC.contactsExport),
+  exportContacts: (format) => ipcRenderer.invoke(IPC.contactsExport, format ?? "vcard"),
   getState: () => ipcRenderer.invoke(IPC.stateGet),
   saveContacts: (contacts) => ipcRenderer.invoke(IPC.contactsSave, contacts),
   reorderContact: (id, targetId, side, sort) => ipcRenderer.invoke(IPC.contactsReorder, { id, targetId, side, sort }),
@@ -29,6 +29,8 @@ const api: ContactsApi = {
   m365SignIn: () => ipcRenderer.invoke(IPC.m365SignIn),
   m365SignOut: () => ipcRenderer.invoke(IPC.m365SignOut),
   m365Sync: () => ipcRenderer.invoke(IPC.m365Sync),
+  teamStatus: () => ipcRenderer.invoke(IPC.teamStatus),
+  teamSync: () => ipcRenderer.invoke(IPC.teamSync),
   getPresence: () => ipcRenderer.invoke(IPC.presenceGet),
   updateStatus: () => ipcRenderer.invoke(IPC.updateStatus),
   checkForUpdates: () => ipcRenderer.invoke(IPC.updateCheck),
@@ -50,6 +52,11 @@ const api: ContactsApi = {
   refreshTodos: () => ipcRenderer.invoke(IPC.todosRefresh),
   setTodoDone: (id, done) => ipcRenderer.invoke(IPC.todosSetDone, id, done),
   replyToTodo: (id, text) => ipcRenderer.invoke(IPC.todosReply, id, text),
+  onTeamStatusChanged: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
+    ipcRenderer.on(IPC.teamStatusChanged, listener);
+    return () => ipcRenderer.removeListener(IPC.teamStatusChanged, listener);
+  },
   onTodosChanged: (cb) => {
     const listener = (_e: Electron.IpcRendererEvent, s: Parameters<typeof cb>[0]) => cb(s);
     ipcRenderer.on(IPC.todosChanged, listener);

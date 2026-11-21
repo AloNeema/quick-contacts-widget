@@ -57,6 +57,7 @@ export const contactSchema = z.object({
       z.object({ kind: z.literal("url"), url: z.string() }),
     ])
     .optional(),
+  team: z.enum(["added", "matched"]).optional(),
   hue: z.number().min(0).max(359),
   pinned: z.boolean(),
   order: z.number(),
@@ -94,6 +95,7 @@ export const settingsSchema = z.object({
       tenant: z.string().min(1).max(200),
       presence: z.boolean(),
       includeOutlookContacts: z.boolean(),
+      teamListUrl: z.string().max(2000).optional(),
     })
     .default(DEFAULT_SETTINGS.m365),
   alwaysOnTop: z.boolean(),
